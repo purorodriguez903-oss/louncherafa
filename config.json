@@ -31,79 +31,60 @@
     "lastUpdated": "2026-08-26T02:25:00.000Z"
   },
   "rafaSafe": {
-    "version": "v4.2 SAFE",
+    "version": "v4.2 PRO SAFE",
     "status": "online",
     "statusLabel": "INDETECTADO (SEGURO)",
     "alert": {
-      "type": "custom",
-      "title": "ALERTA DEL SISTEMA",
+      "type": "none",
+      "title": "",
       "message": "",
       "active": false
     },
     "features": [
-      {
-        "id": "aimbot_fov",
-        "name": "Aimbot 360 & FOV Circular",
-        "category": "Combat",
-        "active": true,
-        "hidden": false
-      },
-      {
-        "id": "aim_lock",
-        "name": "Aim Lock Cabeza / Cuello",
-        "category": "Combat",
-        "active": true,
-        "hidden": false
-      },
-      {
-        "id": "esp_box",
-        "name": "ESP Box & Skeleton 2D/3D",
-        "category": "Visuals",
-        "active": true,
-        "hidden": false
-      },
-      {
-        "id": "esp_lines",
-        "name": "ESP Lines (Snaplines)",
-        "category": "Visuals",
-        "active": true,
-        "hidden": false
-      },
-      {
-        "id": "esp_distance",
-        "name": "ESP Distancia & Nombres",
-        "category": "Visuals",
-        "active": true,
-        "hidden": false
-      },
-      {
-        "id": "bypass_ff",
-        "name": "Safe Memory Bypass (FF)",
-        "category": "Bypass",
-        "active": true,
-        "hidden": false
-      },
-      {
-        "id": "no_recoil",
-        "name": "Zero Recoil & Spread 0%",
-        "category": "Combat",
-        "active": true,
-        "hidden": false
-      },
-      {
-        "id": "fast_speed",
-        "name": "Velocidad de Movimiento x2",
-        "category": "Movement",
-        "active": true,
-        "hidden": false
-      },
-      {
-        "id": "ghost_mode",
-        "name": "Ghost Mode & Desync",
-        "category": "Misc",
-        "active": true,
-        "hidden": false
-      }
+      { "id": "aim_enabled", "name": "Enabled - Aimbot", "category": "Combat", "active": true, "hidden": false, "desc": "Activa el subsistema principal de puntería" },
+      { "id": "aim_silent", "name": "Silent Aim Inaudible", "category": "Combat", "active": true, "hidden": false, "desc": "Balas redirigidas al objetivo sin mover la mira" },
+      { "id": "aim_assist", "name": "Aimbot Assist (Rage)", "category": "Combat", "active": true, "hidden": false, "desc": "Asistencia de apuntado agresivo instantáneo" },
+      { "id": "aim_ruby", "name": "Aimbot Ruby Engine", "category": "Combat", "active": true, "hidden": false, "desc": "Algoritmo de predicción balística avanzada" },
+      { "id": "aim_cover", "name": "Silent Cover Mode", "category": "Combat", "active": true, "hidden": false, "desc": "Disparos a través de coberturas leves" },
+      { "id": "aim_smooth", "name": "Humanized Smoothing (Bezier)", "category": "Combat", "active": true, "hidden": false, "desc": "Suavizado con curvas matemáticas indetectables" },
+      { "id": "aim_ignore_team", "name": "Ignore Team / Squad", "category": "Combat", "active": true, "hidden": false, "desc": "No fijar compañeros de equipo" },
+      { "id": "aim_ignore_bots", "name": "Ignore AI Bots", "category": "Combat", "active": true, "hidden": false, "desc": "Filtro para ignorar bots del juego" },
+      { "id": "aim_ignore_downed", "name": "Ignore Downed Enemies", "category": "Combat", "active": true, "hidden": false, "desc": "Ignorar enemigos en el suelo / noqueados" },
+      { "id": "aim_no_recoil", "name": "Recoilless Shooting (No Recoil)", "category": "Combat", "active": true, "hidden": false, "desc": "Elimina el 100% del retroceso del arma" },
+      { "id": "aim_fast_shoot", "name": "Fast Shooting / Rapid Fire", "category": "Combat", "active": true, "hidden": false, "desc": "Aumenta la cadencia de disparo por segundo" },
+      { "id": "aim_fast_reload", "name": "Fast Recharge / Instant Reload", "category": "Combat", "active": true, "hidden": false, "desc": "Recarga de cargador en milisegundos" },
+      { "id": "aim_fast_swap", "name": "Instant Fast Swap (Doble AWM)", "category": "Combat", "active": true, "hidden": false, "desc": "Cambio ultrarrápido entre armas pesadas" },
+      { "id": "aim_spinbot", "name": "SpinBot 360", "category": "Combat", "active": true, "hidden": false, "desc": "Rotación rápida para evitar disparos enemigos" },
+
+      { "id": "esp_box", "name": "ESP Box 2D / 3D", "category": "Visuals", "active": true, "hidden": false, "desc": "Caja contenedora de posición enemiga" },
+      { "id": "esp_skeleton", "name": "ESP Skeleton 3D Bones", "category": "Visuals", "active": true, "hidden": false, "desc": "Renderizado de articulaciones y huesos" },
+      { "id": "esp_lines", "name": "ESP Snaplines (Rastreo)", "category": "Visuals", "active": true, "hidden": false, "desc": "Líneas desde la pantalla hacia los enemigos" },
+      { "id": "esp_names", "name": "ESP Player Names & Distance", "category": "Visuals", "active": true, "hidden": false, "desc": "Nombres reales y distancia en metros" },
+      { "id": "esp_health", "name": "ESP Health Bar & Armor", "category": "Visuals", "active": true, "hidden": false, "desc": "Barra de vida y chaleco dinámico" },
+      { "id": "esp_sound_radar", "name": "Spatial Sound Radar 360", "category": "Visuals", "active": true, "hidden": false, "desc": "Radar circular que marca pasos y disparos" },
+      { "id": "esp_crosshair_rgb", "name": "Crosshair RGB Laser", "category": "Visuals", "active": true, "hidden": false, "desc": "Punto de mira personalizado con gradiente RGB" },
+      { "id": "esp_fire_alert", "name": "Enemy Firing / Attack Alert", "category": "Visuals", "active": true, "hidden": false, "desc": "Aviso en pantalla cuando un enemigo te apunta" },
+      { "id": "esp_lock_brackets", "name": "Target Lock Brackets [ ]", "category": "Visuals", "active": true, "hidden": false, "desc": "Corchetes de seguimiento visual al objetivo" },
+      { "id": "esp_fov_scale", "name": "Dynamic FOV Distance Scale", "category": "Visuals", "active": true, "hidden": false, "desc": "Círculo FOV adaptativo según la distancia" },
+      { "id": "esp_velocity_trail", "name": "Movement Velocity Trail", "category": "Visuals", "active": true, "hidden": false, "desc": "Estela luminosa de trayectoria de carrera" },
+      { "id": "esp_revive_bar", "name": "Knockdown & Revive Progress Bar", "category": "Visuals", "active": true, "hidden": false, "desc": "Progreso de levantamiento de aliados/enemigos" },
+      { "id": "esp_danger_zone", "name": "Danger / Safe Zone Alert", "category": "Visuals", "active": true, "hidden": false, "desc": "Avisos de zona roja y zona segura" },
+      { "id": "esp_night_mode", "name": "Night Mode & Full Bright", "category": "Visuals", "active": true, "hidden": false, "desc": "Ajuste de iluminación y visión nocturna" },
+
+      { "id": "mem_bypass", "name": "Safe Memory Bypass (FF Engine)", "category": "Bypass", "active": true, "hidden": false, "desc": "Bypass de seguridad en memoria anticheat" },
+      { "id": "mem_speed_timer", "name": "Speed Memory (Speed Timer Key)", "category": "Movement", "active": true, "hidden": false, "desc": "Multiplicador de velocidad de motor x2 / x5" },
+      { "id": "mem_speed_player", "name": "Player Speed Hack", "category": "Movement", "active": true, "hidden": false, "desc": "Velocidad aumentada a pie" },
+      { "id": "mem_vehicle_turbo", "name": "Vehicle Turbo Speed", "category": "Movement", "active": true, "hidden": false, "desc": "Turbo de aceleración en todos los vehículos" },
+      { "id": "mem_teleport_mark", "name": "Teleport to Map Mark", "category": "Movement", "active": true, "hidden": false, "desc": "Teletransporte instantáneo al punto marcado" },
+      { "id": "mem_wall_hack", "name": "Wall Hack (Walk Through Walls)", "category": "Exploits", "active": true, "hidden": false, "desc": "Atravesar estructuras sólidas" },
+      { "id": "mem_under_player", "name": "Under Player (Subterráneo)", "category": "Exploits", "active": true, "hidden": false, "desc": "Posicionamiento por debajo del terreno" },
+      { "id": "mem_player_move", "name": "Player Move Manipulator", "category": "Exploits", "active": true, "hidden": false, "desc": "Manipulación de paquetes de movimiento" },
+      { "id": "mem_raise_enemy", "name": "Raise Enemy to Sky", "category": "Exploits", "active": true, "hidden": false, "desc": "Levantar jugadores enemigos por los aires" },
+      { "id": "mem_ghost_mode", "name": "GhostMode (WinDivert Desync)", "category": "Network", "active": true, "hidden": false, "desc": "Modo fantasma invisible para servidores" },
+      { "id": "mem_freeze_lag", "name": "Freeze Lag (Packet Hold)", "category": "Network", "active": true, "hidden": false, "desc": "Congelar jugadores en pantalla temporalmente" },
+      { "id": "mem_teleport_divert", "name": "Teleport (Network Route)", "category": "Network", "active": true, "hidden": false, "desc": "Teletransporte asistido por paquetes WinDivert" },
+      { "id": "mem_fly_antigravity", "name": "Anti-Gravity (Fly Hack)", "category": "Exploits", "active": true, "hidden": false, "desc": "Vuelo libre sin gravedad por el mapa" },
+      { "id": "mem_fly_controls", "name": "Dynamic Fly Controls (Space/Ctrl)", "category": "Exploits", "active": true, "hidden": false, "desc": "Control dinámico de altura de vuelo" }
     ],
     "hiddenCount": 0
   },
@@ -113,17 +94,6 @@
       "duration": "lifetime",
       "durationDays": -1,
       "label": "Master VIP Key",
-      "createdAt": "2026-08-26T02:00:00.000Z",
-      "expiresAt": null,
-      "hwid": null,
-      "usedAt": null,
-      "status": "active"
-    },
-    {
-      "key": "RAFA-TRIAL-7DAYS-DEMO",
-      "duration": "7d",
-      "durationDays": 7,
-      "label": "Prueba 7 Días",
       "createdAt": "2026-08-26T02:00:00.000Z",
       "expiresAt": null,
       "hwid": null,

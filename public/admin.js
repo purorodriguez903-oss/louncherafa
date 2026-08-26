@@ -1,4 +1,4 @@
-// Admin Dashboard Controller for RafaPanel Cloud with Token Auth & Multiapp Switcher
+// Admin Dashboard Controller for RafaPanel Cloud with Dual-App Switcher & 42 Cheat Features
 let currentAdminToken = localStorage.getItem('rafaAdminToken') || sessionStorage.getItem('rafaAdminToken') || '';
 let emulatorsChart = null;
 let currentConfig = null;
@@ -16,6 +16,7 @@ function getAuthHeaders() {
 // Toast Notification
 function showToast(message, isSuccess = true) {
     const toast = document.getElementById('toast');
+    if (!toast) return;
     const msgEl = document.getElementById('toastMsg');
     const iconEl = document.getElementById('toastIcon');
     msgEl.innerText = message;
@@ -105,36 +106,47 @@ function logoutAdmin() {
     location.reload();
 }
 
-// Multiapp Selector Handler
+// Dual-App Switcher (RAFA Launcher <-> RAFA SAFE)
 function handleAppSwitch(appId) {
+    const launcherNav = document.getElementById('launcherNavGroup');
+    const safeNav = document.getElementById('safeNavGroup');
+
     if (appId === 'rafa_safe') {
-        switchTab('rafasafe');
+        launcherNav.style.display = 'none';
+        safeNav.style.display = 'flex';
+        switchTab('mockup_safe');
+        showToast("Cambiado a: RAFA SAFE (Panel Cloud)");
     } else {
-        switchTab('dashboard');
+        launcherNav.style.display = 'flex';
+        safeNav.style.display = 'none';
+        switchTab('dash_launcher');
+        showToast("Cambiado a: RAFA Launcher (DX11)");
     }
 }
 
-// Tab Switching
+// Tab Switching Engine (100% Reliable)
 function switchTab(tabId) {
-    document.querySelectorAll('.sidebar-tab-btn').forEach(btn => btn.classList.remove('active'));
+    // Deactivate all sidebar tab buttons
+    document.querySelectorAll('.sidebar-tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.getAttribute('data-tab') === tabId) {
+            btn.classList.add('active');
+        }
+    });
+
+    // Deactivate all tab panes
     document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
 
-    const activeBtn = Array.from(document.querySelectorAll('.sidebar-tab-btn')).find(b => b.getAttribute('onclick').includes(tabId));
-    if (activeBtn) activeBtn.classList.add('active');
-
-    const pane = document.getElementById('tab-' + tabId);
-    if (pane) pane.classList.add('active');
-
-    const appSelect = document.getElementById('appSelector');
-    if (tabId === 'rafasafe') {
-        if (appSelect) appSelect.value = 'rafa_safe';
-        loadSafePanelData();
-    } else {
-        if (appSelect) appSelect.value = 'rafa_launcher';
+    // Activate selected pane
+    const targetPane = document.getElementById('tab-' + tabId);
+    if (targetPane) {
+        targetPane.classList.add('active');
     }
 
-    if (tabId === 'keys') loadKeysTable();
-    if (tabId === 'dashboard') loadLiveStats();
+    // Dynamic data loaders
+    if (tabId === 'keys_launcher') loadKeysTable();
+    if (tabId === 'dash_launcher') loadLiveStats();
+    if (tabId.includes('_safe')) loadSafePanelData();
 }
 
 // Emulators Chart.js Setup
@@ -176,6 +188,15 @@ async function loadAllAdminData() {
         document.getElementById('allowFreeAccessToggle').checked = !!currentConfig.security.allowFreeAccess;
         document.getElementById('masterAccessKeyInput').value = currentConfig.security.accessKey || 'RAFAPANEL';
         document.getElementById('broadcastAlertInput').value = currentConfig.status.broadcastAlert || '';
+
+        // Populate Discord settings
+        if (currentConfig.discord) {
+            document.getElementById('discordEnabledToggle').checked = !!currentConfig.discord.enabled;
+            document.getElementById('discordWebhookUrl').value = currentConfig.discord.webhookUrl || '';
+            document.getElementById('discordNotifyDll').checked = !!currentConfig.discord.notifyOnDll;
+            document.getElementById('discordNotifyKey').checked = !!currentConfig.discord.notifyOnKey;
+            document.getElementById('discordNotifyKillSwitch').checked = !!currentConfig.discord.notifyOnKillSwitch;
+        }
 
         // Kill Switch Banner state
         updateKillSwitchUI(currentConfig.killSwitch);
@@ -453,23 +474,31 @@ async function renewKey(key) {
     }
 }
 
-// --- RAFA SAFE APPLICATION CONTROLLER ---
+// --- RAFA SAFE APPLICATION CONTROLLER (ALL 42 REAL FEATURES) ---
 async function loadSafePanelData() {
     try {
         const res = await fetch('/api/safe/config');
         const data = await res.json();
         if (data.success && data.rafaSafe) {
-            renderSafeFeatures(data.rafaSafe.features || []);
+            const features = data.rafaSafe.features || [];
+            
+            // Render in Mockup
+            renderSafeMockupList(features);
+
+            // Render categorized lists
+            renderCategoryList('safeCombatList', features.filter(f => f.category === 'Combat'));
+            renderCategoryList('safeVisualsList', features.filter(f => f.category === 'Visuals'));
+            renderCategoryList('safeExploitsList', features.filter(f => ['Bypass', 'Movement', 'Exploits', 'Network'].includes(f.category)));
+
             renderSafeAlertState(data.rafaSafe.alert || {});
             
             const hiddenCount = data.rafaSafe.hiddenCount || 0;
-            document.getElementById('safeMockupHiddenBadge').innerText = `${hiddenCount} Funciones Ocultas`;
+            const badge = document.getElementById('safeMockupHiddenBadge');
+            if (badge) badge.innerText = `${hiddenCount} Funciones Ocultas`;
 
             const noticeBox = document.getElementById('safeUpdateNotice');
-            if (hiddenCount >= 3) {
-                noticeBox.style.display = 'flex';
-            } else {
-                noticeBox.style.display = 'none';
+            if (noticeBox) {
+                noticeBox.style.display = hiddenCount >= 3 ? 'flex' : 'none';
             }
         }
     } catch (e) {
@@ -477,7 +506,7 @@ async function loadSafePanelData() {
     }
 }
 
-function renderSafeFeatures(features) {
+function renderSafeMockupList(features) {
     const container = document.getElementById('safeFeaturesMockupList');
     if (!container) return;
 
@@ -502,12 +531,38 @@ function renderSafeFeatures(features) {
     `).join('');
 }
 
+function renderCategoryList(containerId, features) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    container.innerHTML = features.map(f => `
+        <div class="panel-mockup-feature-item ${f.hidden ? 'hidden-feature' : ''}" style="background: rgba(255, 255, 255, 0.02); padding: 0.9rem 1.25rem;">
+            <div style="flex: 1;">
+                <div style="display: flex; align-items: center; gap: 0.6rem;">
+                    <input type="checkbox" ${f.hidden ? '' : 'checked'} disabled style="accent-color: var(--primary); width: 17px; height: 17px;">
+                    <span style="color: var(--text-main); font-weight: 700; font-size: 0.95rem;">${f.name}</span>
+                    <span style="font-size: 0.75rem; color: var(--secondary); background: rgba(168, 85, 247, 0.15); padding: 0.2rem 0.5rem; border-radius: 4px;">${f.category}</span>
+                    ${f.hidden ? '<span style="font-size: 0.75rem; color: #ef4444; font-weight: 700; background: rgba(239, 68, 68, 0.15); padding: 0.2rem 0.5rem; border-radius: 4px;">OCULTA EN JUEGO</span>' : '<span style="font-size: 0.75rem; color: var(--success); font-weight: 700; background: rgba(0, 255, 170, 0.15); padding: 0.2rem 0.5rem; border-radius: 4px;">VISIBLE</span>'}
+                </div>
+                <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.35rem; margin-left: 1.75rem;">
+                    ${f.desc || 'Función del cheat inyectada en el emulador.'}
+                </p>
+            </div>
+            <div>
+                ${f.hidden 
+                    ? `<button onclick="toggleFeatureDirectly('${f.id}', false)" class="btn-show-feature" style="padding: 0.5rem 1rem;">👁️ Mostrar en Panel</button>` 
+                    : `<button onclick="promptHideFeature('${f.id}', '${f.name}')" class="btn-hide-feature" style="padding: 0.5rem 1rem;">✖ Ocultar de Panel</button>`}
+            </div>
+        </div>
+    `).join('');
+}
+
 function renderSafeAlertState(alert) {
     const alertBox = document.getElementById('safeMockupAlertBox');
     const alertTitle = document.getElementById('safeMockupAlertTitle');
     const alertMsg = document.getElementById('safeMockupAlertMsg');
 
-    if (alert && alert.active && alert.message) {
+    if (alertBox && alert && alert.active && alert.message) {
         alertBox.style.display = 'block';
         alertTitle.innerText = alert.title || 'ALERTA';
         alertMsg.innerText = alert.message;
@@ -522,7 +577,7 @@ function renderSafeAlertState(alert) {
             alertBox.style.borderColor = 'var(--primary)';
             alertTitle.style.color = 'var(--primary)';
         }
-    } else {
+    } else if (alertBox) {
         alertBox.style.display = 'none';
     }
 }
@@ -620,7 +675,7 @@ async function saveSecurityConfig(e) {
 // DLLs Upload Rendering & Handler
 function renderDllsTable(dlls) {
     const tbody = document.getElementById('adminDllsTableBody');
-    if (!dlls) return;
+    if (!dlls || !tbody) return;
 
     tbody.innerHTML = dlls.map(dll => `
         <tr>
@@ -697,9 +752,9 @@ async function handleLauncherUpload(e) {
     }
 }
 
-// Discord Webhook
+// Discord Webhook Save & Test
 async function saveDiscordConfig(e) {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     const enabled = document.getElementById('discordEnabledToggle').checked;
     const webhookUrl = document.getElementById('discordWebhookUrl').value.trim();
     const notifyOnDll = document.getElementById('discordNotifyDll').checked;
@@ -720,14 +775,19 @@ async function saveDiscordConfig(e) {
         });
         const data = await res.json();
         if (data.success) {
-            showToast("Configuración de Discord Webhook Guardada");
+            showToast("Configuración de Discord Webhook Guardada con éxito");
         }
     } catch (e) {
-        showToast("Error al guardar", false);
+        showToast("Error al guardar Discord", false);
     }
 }
 
 async function testDiscordWebhook() {
+    const webhookUrl = document.getElementById('discordWebhookUrl').value.trim();
+    if (!webhookUrl) {
+        showToast("Por favor pega primero la URL de tu Webhook de Discord", false);
+        return;
+    }
     showToast("Enviando mensaje de prueba a Discord...");
     await saveDiscordConfig({ preventDefault: () => {} });
 }

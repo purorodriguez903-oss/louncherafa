@@ -120,37 +120,62 @@
     <!-- Left Sidebar -->
     <aside class="admin-sidebar">
       
-      <!-- Multiapp Selector Box -->
+      <!-- Top Multiapp Selector Box -->
       <div class="app-selector-box">
         <label>Aplicación Activa:</label>
         <select id="appSelector" class="app-select-dropdown" onchange="handleAppSwitch(this.value)">
-          <option value="rafa_launcher">🚀 RAFA Launcher (DX11)</option>
+          <option value="rafa_launcher" selected>🚀 RAFA Launcher (DX11)</option>
           <option value="rafa_safe">🛡️ RAFA SAFE (Panel Cloud)</option>
         </select>
       </div>
 
-      <!-- Vertical Tabs -->
-      <div class="sidebar-tabs">
-        <button class="sidebar-tab-btn active" onclick="switchTab('dashboard')">
+      <!-- TABS FOR RAFA LAUNCHER -->
+      <div id="launcherNavGroup" class="sidebar-tabs">
+        <div style="padding: 0 0.5rem; font-size: 0.75rem; text-transform: uppercase; color: var(--text-dim); font-weight: 700; letter-spacing: 0.5px; margin-bottom: 0.3rem;">
+          Módulos Launcher
+        </div>
+        <button class="sidebar-tab-btn active" data-tab="dash_launcher" onclick="switchTab('dash_launcher')">
           <span>📊</span> Dashboard & Telemetría
         </button>
-        <button class="sidebar-tab-btn" onclick="switchTab('keys')">
+        <button class="sidebar-tab-btn" data-tab="keys_launcher" onclick="switchTab('keys_launcher')">
           <span>🔑</span> Licencias VIP & HWID
         </button>
-        <button class="sidebar-tab-btn" id="tabBtnRafaSafe" onclick="switchTab('rafasafe')">
-          <span>🎛️</span> Gestor RAFA SAFE
-        </button>
-        <button class="sidebar-tab-btn" onclick="switchTab('dlls')">
+        <button class="sidebar-tab-btn" data-tab="dlls_launcher" onclick="switchTab('dlls_launcher')">
           <span>📦</span> Módulos DLL (7 Archivos)
         </button>
-        <button class="sidebar-tab-btn" onclick="switchTab('security')">
+        <button class="sidebar-tab-btn" data-tab="security_launcher" onclick="switchTab('security_launcher')">
           <span>🔒</span> Seguridad & Kill Switch
         </button>
-        <button class="sidebar-tab-btn" onclick="switchTab('discord')">
+        <button class="sidebar-tab-btn" data-tab="exe_launcher" onclick="switchTab('exe_launcher')">
+          <span>🚀</span> Actualizador .EXE
+        </button>
+        <button class="sidebar-tab-btn" data-tab="discord_launcher" onclick="switchTab('discord_launcher')">
           <span>🤖</span> Discord Webhook
         </button>
-        <button class="sidebar-tab-btn" onclick="switchTab('launcher')">
-          <span>🚀</span> Actualizador .EXE
+      </div>
+
+      <!-- TABS FOR RAFA SAFE -->
+      <div id="safeNavGroup" class="sidebar-tabs" style="display: none;">
+        <div style="padding: 0 0.5rem; font-size: 0.75rem; text-transform: uppercase; color: var(--primary); font-weight: 700; letter-spacing: 0.5px; margin-bottom: 0.3rem;">
+          Control RAFA SAFE
+        </div>
+        <button class="sidebar-tab-btn" data-tab="mockup_safe" onclick="switchTab('mockup_safe')">
+          <span>🛡️</span> Panel Flotante en Vivo
+        </button>
+        <button class="sidebar-tab-btn" data-tab="combat_safe" onclick="switchTab('combat_safe')">
+          <span>🎯</span> Aimbot & Combate (14)
+        </button>
+        <button class="sidebar-tab-btn" data-tab="visuals_safe" onclick="switchTab('visuals_safe')">
+          <span>👁️</span> Visuales & ESP (14)
+        </button>
+        <button class="sidebar-tab-btn" data-tab="exploits_safe" onclick="switchTab('exploits_safe')">
+          <span>⚡</span> Exploits & Bypass (14)
+        </button>
+        <button class="sidebar-tab-btn" data-tab="alerts_safe" onclick="switchTab('alerts_safe')">
+          <span>📢</span> Alertas & Broadcast
+        </button>
+        <button class="sidebar-tab-btn" data-tab="discord_safe" onclick="switchTab('discord_safe')">
+          <span>🤖</span> Discord Webhook
         </button>
       </div>
 
@@ -180,8 +205,12 @@
         </button>
       </div>
 
-      <!-- TAB 1: LIVE DASHBOARD -->
-      <section id="tab-dashboard" class="tab-pane active">
+      <!-- ============================================== -->
+      <!-- RAFA LAUNCHER PANES -->
+      <!-- ============================================== -->
+
+      <!-- TAB: DASHBOARD LAUNCHER -->
+      <section id="tab-dash_launcher" class="tab-pane active">
         <div class="metrics-grid">
           <div class="metric-card">
             <div class="metric-num" id="dashActiveUsers" style="color: var(--success);">0</div>
@@ -202,7 +231,6 @@
         </div>
 
         <div class="charts-grid">
-          <!-- Emulators Chart -->
           <div class="chart-card">
             <h4 style="color: var(--primary); margin-bottom: 1rem; font-size: 1.1rem;">🎮 Emuladores Activos en Vivo</h4>
             <div style="height: 200px; position: relative;">
@@ -210,7 +238,6 @@
             </div>
           </div>
 
-          <!-- Live Connected Users Table -->
           <div class="chart-card">
             <h4 style="color: var(--secondary); margin-bottom: 1rem; font-size: 1.1rem;">⚡ Telemetría de Launchers Activos</h4>
             <div style="max-height: 200px; overflow-y: auto;">
@@ -232,8 +259,8 @@
         </div>
       </section>
 
-      <!-- TAB 2: KEYS & HWID MANAGEMENT -->
-      <section id="tab-keys" class="tab-pane">
+      <!-- TAB: KEYS LAUNCHER -->
+      <section id="tab-keys_launcher" class="tab-pane">
         <div class="section-title">
           <div>
             <h3>Administrador de Licencias VIP & HWID Lock</h3>
@@ -246,7 +273,6 @@
           </button>
         </div>
 
-        <!-- Keys Table -->
         <div class="glass-panel" style="margin-top: 1.5rem;">
           <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
             <input type="text" id="searchKeyInput" oninput="filterKeysTable()" placeholder="🔍 Buscar por clave, etiqueta o HWID..." class="form-control" style="max-width: 380px;">
@@ -272,100 +298,8 @@
         </div>
       </section>
 
-      <!-- TAB 3: RAFA SAFE APP MANAGER -->
-      <section id="tab-rafasafe" class="tab-pane">
-        <div class="section-title">
-          <div>
-            <h3>🎛️ Gestor de Funciones & Alertas: RAFA SAFE</h3>
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem;">
-              Administra las funciones del panel en tiempo real, oculta opciones sin borrarlas y transmite alertas en vivo.
-            </p>
-          </div>
-        </div>
-
-        <!-- Hidden Features Alert Notice (Triggered when 3+ are hidden) -->
-        <div id="safeUpdateNotice" class="killswitch-card" style="display: none; background: rgba(0, 229, 255, 0.1); border-color: var(--primary);">
-          <div>
-            <h4 style="color: var(--primary); font-size: 1.1rem;">⚡ Nueva Actualización Activa en la Nube</h4>
-            <p id="safeUpdateNoticeText" style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.2rem;">
-              Hay 3 o más funciones ocultas. Se ha enviado el aviso a los usuarios para recargar el panel.
-            </p>
-          </div>
-        </div>
-
-        <!-- 2 Columns Grid: Alert Broadcaster & Panel Mockup -->
-        <div class="charts-grid" style="grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); margin-top: 1.5rem;">
-          
-          <!-- Column 1: Live Alert Broadcaster Center -->
-          <div class="glass-panel" style="padding: 1.75rem;">
-            <h4 style="color: var(--primary); font-size: 1.15rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-              <span>📢</span> Transmitir Alerta a RAFA SAFE
-            </h4>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">
-              El mensaje aparecerá arriba de las funciones en el panel de todos los usuarios.
-            </p>
-
-            <form onsubmit="broadcastSafeAlert(event)">
-              <div class="form-group">
-                <label>Tipo de Alerta:</label>
-                <select id="safeAlertTypeSelect" class="form-control">
-                  <option value="maintenance">⚠️ Panel en Mantenimiento</option>
-                  <option value="offline">🔴 Panel Cayó / Estado Offline</option>
-                  <option value="new_feature">✨ Nueva Función Agregada</option>
-                  <option value="custom" selected>📢 Mensaje / Anuncio Personalizado</option>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label>Título de la Alerta:</label>
-                <input type="text" id="safeAlertTitleInput" class="form-control" placeholder="Ej: PANEL EN MANTENIMIENTO" value="AVISO VIP">
-              </div>
-
-              <div class="form-group">
-                <label>Mensaje para los Usuarios:</label>
-                <textarea id="safeAlertMsgInput" class="form-control" rows="3" placeholder="Escribe el mensaje que verán los usuarios en el centro del panel...">Panel actualizado con éxito. Módulos protegidos.</textarea>
-              </div>
-
-              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem;">
-                <input type="checkbox" id="safeAlertActiveToggle" checked style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--primary);">
-                <label for="safeAlertActiveToggle" style="font-size: 0.85rem; color: var(--text-main); cursor: pointer; margin: 0;">
-                  Mostrar alerta en el panel (Activa)
-                </label>
-              </div>
-
-              <button type="submit" class="btn-submit">📢 Transmitir Alerta en Tiempo Real ➔</button>
-            </form>
-          </div>
-
-          <!-- Column 2: Interactive Live Panel Mockup -->
-          <div class="panel-mockup-frame">
-            <div class="panel-mockup-header">
-              <div>
-                <h4 style="color: var(--primary); font-size: 1.1rem; display: flex; align-items: center; gap: 0.4rem;">
-                  <span>🛡️</span> RAFA SAFE v4.2 PRO
-                </h4>
-                <span style="font-size: 0.75rem; color: var(--success);">● Conectado a la Nube (24/7)</span>
-              </div>
-              <span id="safeMockupHiddenBadge" class="badge-hwid">0 Funciones Ocultas</span>
-            </div>
-
-            <!-- In-Mockup Alert Display -->
-            <div id="safeMockupAlertBox" style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; padding: 0.6rem 0.85rem; border-radius: var(--radius-sm); margin-bottom: 1rem; display: none;">
-              <b id="safeMockupAlertTitle" style="color: #ef4444; font-size: 0.85rem;">ALERTA</b>
-              <p id="safeMockupAlertMsg" style="color: var(--text-main); font-size: 0.8rem; margin-top: 0.2rem;">Mensaje</p>
-            </div>
-
-            <!-- Feature Checkboxes List -->
-            <div id="safeFeaturesMockupList" style="max-height: 380px; overflow-y: auto;">
-              <!-- Populated via JS -->
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      <!-- TAB 4: 7 DLLS MODULES -->
-      <section id="tab-dlls" class="tab-pane">
+      <!-- TAB: DLLS LAUNCHER -->
+      <section id="tab-dlls_launcher" class="tab-pane">
         <div class="section-title">
           <div>
             <h3>Administración de los 7 Módulos DLL</h3>
@@ -394,8 +328,8 @@
         </div>
       </section>
 
-      <!-- TAB 5: SECURITY & ACCESS CONTROL -->
-      <section id="tab-security" class="tab-pane">
+      <!-- TAB: SECURITY LAUNCHER -->
+      <section id="tab-security_launcher" class="tab-pane">
         <div class="section-title">
           <div>
             <h3>Seguridad Global & Control de Acceso</h3>
@@ -405,7 +339,6 @@
 
         <div class="glass-panel" style="margin-top: 1.5rem; padding: 2rem;">
           <form onsubmit="saveSecurityConfig(event)">
-            <!-- Free Access Switch -->
             <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border-color);">
               <div>
                 <h4 style="font-size: 1.1rem; color: var(--text-main);">🔓 Acceso Gratuito Total (Free Mode)</h4>
@@ -419,14 +352,12 @@
               </label>
             </div>
 
-            <!-- Master Access Key -->
             <div style="margin-top: 1.5rem;">
               <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Clave Maestra VIP (Master Key):</label>
               <input type="text" id="masterAccessKeyInput" class="form-control" style="font-family: var(--font-mono); letter-spacing: 1px;" value="RAFAPANEL">
               <small style="color: var(--text-dim); display: block; margin-top: 0.4rem;">Esta clave siempre tendrá acceso VIP ilimitado en todos los Launchers.</small>
             </div>
 
-            <!-- Global Broadcast Alert -->
             <div style="margin-top: 1.5rem;">
               <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Mensaje de Alerta Global (Broadcast):</label>
               <input type="text" id="broadcastAlertInput" class="form-control" value="Servidores 100% activos y seguros. Todos los módulos operativos.">
@@ -438,8 +369,36 @@
         </div>
       </section>
 
-      <!-- TAB 6: DISCORD WEBHOOK -->
-      <section id="tab-discord" class="tab-pane">
+      <!-- TAB: EXE LAUNCHER -->
+      <section id="tab-exe_launcher" class="tab-pane">
+        <div class="section-title">
+          <div>
+            <h3>Actualizador del Ejecutable (Launcher_RafaPanel.exe)</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Sube la versión más reciente del Launcher compilado en C++ DirectX 11.</p>
+          </div>
+        </div>
+
+        <div class="glass-panel" style="margin-top: 1.5rem; padding: 2rem; max-width: 600px;">
+          <div style="display: flex; align-items: center; gap: 1.5rem; margin-bottom: 1.5rem;">
+            <div class="brand-logo" style="width: 60px; height: 60px; font-size: 2rem;">🚀</div>
+            <div>
+              <h4 id="adminLauncherFilename" style="font-size: 1.15rem; color: var(--primary);">Launcher_RafaPanel.exe</h4>
+              <p id="adminLauncherMeta" style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.2rem;">Tamaño: -- • Actualizado: --</p>
+            </div>
+          </div>
+
+          <form id="launcherUploadForm" onsubmit="handleLauncherUpload(event)">
+            <div class="form-group">
+              <label>Selecciona el nuevo archivo .EXE:</label>
+              <input type="file" id="launcherFileInput" class="form-control" accept=".exe" required>
+            </div>
+            <button type="submit" class="btn-submit">Subir Nuevo Launcher a la Nube ➔</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- TAB: DISCORD LAUNCHER / SAFE -->
+      <section id="tab-discord_launcher" class="tab-pane">
         <div class="section-title">
           <div>
             <h3>Integración con Discord Webhooks</h3>
@@ -487,31 +446,165 @@
         </div>
       </section>
 
-      <!-- TAB 7: LAUNCHER EXECUTABLE -->
-      <section id="tab-launcher" class="tab-pane">
+      <!-- ============================================== -->
+      <!-- RAFA SAFE PANES (ALL REAL FEATURES & CATEGORIES) -->
+      <!-- ============================================== -->
+
+      <!-- TAB: MOCKUP SAFE (FLOTANTE EN VIVO) -->
+      <section id="tab-mockup_safe" class="tab-pane">
         <div class="section-title">
           <div>
-            <h3>Actualizador del Ejecutable (Launcher_RafaPanel.exe)</h3>
-            <p style="color: var(--text-muted); font-size: 0.9rem;">Sube la versión más reciente del Launcher compilado en C++ DirectX 11.</p>
+            <h3>🛡️ Panel Flotante en Vivo: RAFA SAFE v4.2 PRO</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">
+              Previsualización idéntica al panel en pantalla. Controla el estado y oculta o muestra cualquier función en tiempo real.
+            </p>
           </div>
         </div>
 
-        <div class="glass-panel" style="margin-top: 1.5rem; padding: 2rem; max-width: 600px;">
-          <div style="display: flex; align-items: center; gap: 1.5rem; margin-bottom: 1.5rem;">
-            <div class="brand-logo" style="width: 60px; height: 60px; font-size: 2rem;">🚀</div>
+        <div id="safeUpdateNotice" class="killswitch-card" style="display: none; background: rgba(0, 229, 255, 0.1); border-color: var(--primary); margin-top: 1rem;">
+          <div>
+            <h4 style="color: var(--primary); font-size: 1.1rem;">⚡ Nueva Actualización Activa en la Nube</h4>
+            <p id="safeUpdateNoticeText" style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.2rem;">
+              Hay 3 o más funciones ocultas. Se ha enviado el aviso a los usuarios para recargar el panel.
+            </p>
+          </div>
+        </div>
+
+        <div class="panel-mockup-frame" style="margin-top: 1.5rem;">
+          <div class="panel-mockup-header">
             <div>
-              <h4 id="adminLauncherFilename" style="font-size: 1.15rem; color: var(--primary);">Launcher_RafaPanel.exe</h4>
-              <p id="adminLauncherMeta" style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.2rem;">Tamaño: -- • Actualizado: --</p>
+              <h4 style="color: var(--primary); font-size: 1.15rem; display: flex; align-items: center; gap: 0.5rem;">
+                <span>🛡️</span> RAFA SAFE v4.2 PRO (In-Game Menu)
+              </h4>
+              <span style="font-size: 0.8rem; color: var(--success);">● Sincronizado en la nube con todos los clientes (24/7)</span>
             </div>
+            <span id="safeMockupHiddenBadge" class="badge-hwid">0 Funciones Ocultas</span>
           </div>
 
-          <form id="launcherUploadForm" onsubmit="handleLauncherUpload(event)">
+          <!-- In-Mockup Alert Display -->
+          <div id="safeMockupAlertBox" style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; padding: 0.75rem 1rem; border-radius: var(--radius-sm); margin-bottom: 1.25rem; display: none;">
+            <b id="safeMockupAlertTitle" style="color: #ef4444; font-size: 0.9rem;">ALERTA</b>
+            <p id="safeMockupAlertMsg" style="color: var(--text-main); font-size: 0.85rem; margin-top: 0.2rem;">Mensaje</p>
+          </div>
+
+          <!-- All Features Rendered in Mockup -->
+          <div id="safeFeaturesMockupList" style="max-height: 480px; overflow-y: auto;">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: COMBAT SAFE (AIMBOT 14 CHECKBOXES) -->
+      <section id="tab-combat_safe" class="tab-pane">
+        <div class="section-title">
+          <div>
+            <h3>🎯 Módulos de Aimbot & Combate (14 Funciones)</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">
+              Activa, desactiva u oculta cualquier opción de puntería en tiempo real para todos los usuarios.
+            </p>
+          </div>
+        </div>
+        <div class="glass-panel" style="margin-top: 1.5rem;">
+          <div id="safeCombatList" style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: VISUALS SAFE (ESP 14 CHECKBOXES) -->
+      <section id="tab-visuals_safe" class="tab-pane">
+        <div class="section-title">
+          <div>
+            <h3>👁️ Módulos Visuales & ESP (14 Funciones)</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">
+              Controla la visibilidad de esqueletos, cajas 2D/3D, radar y alertas visuales.
+            </p>
+          </div>
+        </div>
+        <div class="glass-panel" style="margin-top: 1.5rem;">
+          <div id="safeVisualsList" style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: EXPLOITS SAFE (BYPASS & MEMORY 14 CHECKBOXES) -->
+      <section id="tab-exploits_safe" class="tab-pane">
+        <div class="section-title">
+          <div>
+            <h3>⚡ Módulos Exploits, Memoria & Bypass (14 Funciones)</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">
+              Bypass de memoria, velocidad multiplicada, modo fantasma WinDivert y vuelo libre.
+            </p>
+          </div>
+        </div>
+        <div class="glass-panel" style="margin-top: 1.5rem;">
+          <div id="safeExploitsList" style="display: flex; flex-direction: column; gap: 0.5rem;">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: ALERTS SAFE (BROADCAST EN TIEMPO REAL) -->
+      <section id="tab-alerts_safe" class="tab-pane">
+        <div class="section-title">
+          <div>
+            <h3>📢 Transmitir Alertas y Mensajes en Vivo a RAFA SAFE</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">
+              El aviso aparecerá de inmediato en la parte superior de las funciones en el panel de todos los clientes conectados.
+            </p>
+          </div>
+        </div>
+
+        <div class="glass-panel" style="margin-top: 1.5rem; padding: 2rem; max-width: 700px;">
+          <form onsubmit="broadcastSafeAlert(event)">
             <div class="form-group">
-              <label>Selecciona el nuevo archivo .EXE:</label>
-              <input type="file" id="launcherFileInput" class="form-control" accept=".exe" required>
+              <label>Tipo de Alerta:</label>
+              <select id="safeAlertTypeSelect" class="form-control">
+                <option value="maintenance">⚠️ Panel en Mantenimiento</option>
+                <option value="offline">🔴 Panel Cayó / Estado Offline</option>
+                <option value="new_feature">✨ Nueva Función Agregada</option>
+                <option value="custom" selected>📢 Mensaje / Anuncio Personalizado</option>
+              </select>
             </div>
-            <button type="submit" class="btn-submit">Subir Nuevo Launcher a la Nube ➔</button>
+
+            <div class="form-group">
+              <label>Título de la Alerta:</label>
+              <input type="text" id="safeAlertTitleInput" class="form-control" placeholder="Ej: PANEL EN MANTENIMIENTO" value="AVISO VIP">
+            </div>
+
+            <div class="form-group">
+              <label>Mensaje para los Usuarios:</label>
+              <textarea id="safeAlertMsgInput" class="form-control" rows="3" placeholder="Escribe el mensaje que verán los usuarios en el centro del panel...">Panel actualizado con éxito. Módulos protegidos.</textarea>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem;">
+              <input type="checkbox" id="safeAlertActiveToggle" checked style="width: 16px; height: 16px; cursor: pointer; accent-color: var(--primary);">
+              <label for="safeAlertActiveToggle" style="font-size: 0.85rem; color: var(--text-main); cursor: pointer; margin: 0;">
+                Mostrar alerta activa en los paneles de los usuarios
+              </label>
+            </div>
+
+            <button type="submit" class="btn-submit">📢 Transmitir Alerta en Tiempo Real ➔</button>
           </form>
+        </div>
+      </section>
+
+      <!-- TAB: DISCORD SAFE (ALIAS) -->
+      <section id="tab-discord_safe" class="tab-pane">
+        <div class="section-title">
+          <div>
+            <h3>Integración con Discord Webhooks (RAFA SAFE)</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Envía notificaciones de funciones y alertas a Discord.</p>
+          </div>
+        </div>
+        <div class="glass-panel" style="margin-top: 1.5rem; padding: 2rem;">
+          <p style="color: var(--text-muted); margin-bottom: 1.5rem;">
+            Puedes configurar las alertas de Discord desde la sección principal de Discord Webhook.
+          </p>
+          <button onclick="switchTab('discord_launcher')" class="btn-primary-large" style="padding: 0.75rem 1.5rem; font-size: 0.95rem;">
+            Ir a Configuración de Discord ➔
+          </button>
         </div>
       </section>
 
