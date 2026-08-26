@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RAFA PANEL - Panel de Administración VIP</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔐</text></svg>">
+  <style>
+    /* Modal Login overlay */
+    .login-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(5, 7, 12, 0.92);
+      backdrop-filter: blur(20px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+    }
+    .login-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glow);
+      box-shadow: 0 0 50px rgba(0, 229, 255, 0.2);
+      border-radius: var(--radius-lg);
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+    }
+    .file-input-hidden {
+      display: none;
+    }
+    .upload-progress {
+      display: none;
+      margin-top: 0.5rem;
+      font-size: 0.8rem;
+      color: var(--primary);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Admin Login Modal -->
+  <div id="loginOverlay" class="login-overlay">
+    <div class="login-box">
+      <div class="brand-logo" style="margin: 0 auto 1.25rem auto;">🔐</div>
+      <h2 style="font-size: 1.5rem; font-weight: 800; margin-bottom: 0.5rem;">Acceso Administrativo</h2>
+      <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">Introduce la clave maestra de administrador para gestionar los 7 DLLs y el launcher.</p>
+      
+      <form id="loginForm">
+        <div class="form-group" style="text-align: left; margin-bottom: 1.25rem;">
+          <label>Contraseña de Administrador</label>
+          <input type="password" id="adminPassInput" class="form-input" placeholder="Ingresa tu contraseña..." required autofocus>
+        </div>
+        <button type="submit" class="btn-primary-large" style="width: 100%; justify-content: center;">
+          Ingresar al Panel
+        </button>
+        <p style="color: var(--text-dim); font-size: 0.75rem; margin-top: 1rem;">Contraseña por defecto: <code>admin</code></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- Navbar -->
+  <header class="navbar">
+    <a href="/" class="brand">
+      <div class="brand-logo">⚡</div>
+      <div class="brand-info">
+        <h1>RAFA PANEL</h1>
+        <span>ADMIN DASHBOARD VIP</span>
+      </div>
+    </a>
+    <div class="nav-links">
+      <a href="/" class="nav-btn nav-btn-admin">🌐 Ver Portal Público</a>
+      <button id="logoutBtn" class="nav-btn nav-btn-admin" style="color: var(--danger); border-color: rgba(239, 68, 68, 0.3);">
+        🔒 Cerrar Sesión
+      </button>
+    </div>
+  </header>
+
+  <!-- Admin Dashboard Container -->
+  <main class="container">
+    
+    <div style="margin-bottom: 2rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <h2 style="font-size: 2rem; font-weight: 900;">Centro de Control en la Nube 24/7</h2>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">Gestiona y actualiza los 7 DLLs, el login, las claves y las alertas en tiempo real.</p>
+      </div>
+      <div class="status-badge" style="margin-bottom: 0;">
+        <div class="status-dot"></div>
+        <span>MODO ADMINISTRADOR ACTIVO</span>
+      </div>
+    </div>
+
+    <!-- Hidden file input for DLL uploads -->
+    <input type="file" id="globalFileInput" class="file-input-hidden" accept=".dll,.exe">
+
+    <!-- Admin Navigation Tabs -->
+    <div class="admin-tabs">
+      <button class="tab-btn active" data-tab="tab-dlls">
+        📦 Gestión de los 7 DLLs
+      </button>
+      <button class="tab-btn" data-tab="tab-login">
+        🔑 Login & Seguridad
+      </button>
+      <button class="tab-btn" data-tab="tab-texts">
+        📢 Alertas & Textos en Vivo
+      </button>
+      <button class="tab-btn" data-tab="tab-launcher">
+        🚀 Actualizar Launcher .EXE
+      </button>
+    </div>
+
+    <!-- TAB 1: GESTIÓN DE 7 DLLS -->
+    <div id="tab-dlls" class="tab-content">
+      <div class="section-title">
+        <div>
+          <h3>Lista de los 7 DLLs Oficiales</h3>
+          <p style="color: var(--text-muted); font-size: 0.85rem;">Haz clic en <b>"Actualizar"</b> en cualquier DLL para subir una nueva versión. Todos los launchers recibirán el archivo actualizado inmediatamente.</p>
+        </div>
+      </div>
+
+      <div class="glass-panel">
+        <table class="dll-table">
+          <thead>
+            <tr>
+              <th>DLL / Archivo</th>
+              <th>Propósito</th>
+              <th>Tamaño Actual</th>
+              <th>Último Cambio</th>
+              <th>Acción de Actualización</th>
+            </tr>
+          </thead>
+          <tbody id="adminDllTableBody">
+            <!-- Rendered by admin.js -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TAB 2: LOGIN & SEGURIDAD -->
+    <div id="tab-login" class="tab-content" style="display: none;">
+      <div class="glass-panel">
+        <div style="padding: 1.5rem 1.75rem 0.5rem; border-bottom: 1px solid var(--border-color);">
+          <h3 style="font-size: 1.3rem;">Configuración de Acceso y Claves</h3>
+          <p style="color: var(--text-muted); font-size: 0.85rem;">Controla si el launcher pide clave o si permites acceso libre a todos los usuarios.</p>
+        </div>
+
+        <form id="securityForm" class="form-grid">
+          <!-- Toggle Free Access -->
+          <div class="switch-wrapper" style="grid-column: 1 / -1;">
+            <div class="switch-label">
+              <span>Modo Acceso Gratuito (Sin Clave)</span>
+              <small>Si se activa, el launcher y la web permitirán entrar a todos los usuarios sin pedir clave.</small>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="allowFreeAccessToggle">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <!-- Access Key Input -->
+          <div class="form-group">
+            <label>Clave de Acceso del Launcher</label>
+            <input type="text" id="accessKeyInput" class="form-input" placeholder="Ejemplo: RAFAPANEL" required>
+            <small style="color: var(--text-dim);">Esta es la clave requerida en el launcher si el modo gratuito está apagado.</small>
+          </div>
+
+          <!-- Change Admin Password -->
+          <div class="form-group">
+            <label>Nueva Contraseña de Administrador (Panel Web)</label>
+            <input type="text" id="adminPasswordInput" class="form-input" placeholder="Nueva contraseña admin...">
+            <small style="color: var(--text-dim);">Clave para acceder a este panel de administración.</small>
+          </div>
+
+          <div style="grid-column: 1 / -1; margin-top: 0.5rem;">
+            <button type="submit" class="btn-primary-large" style="width: auto;">
+              💾 Guardar Configuración de Seguridad
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- TAB 3: ALERTAS & TEXTOS EN VIVO -->
+    <div id="tab-texts" class="tab-content" style="display: none;">
+      <div class="glass-panel">
+        <div style="padding: 1.5rem 1.75rem 0.5rem; border-bottom: 1px solid var(--border-color);">
+          <h3 style="font-size: 1.3rem;">Modificación de Textos y Estados en Vivo</h3>
+          <p style="color: var(--text-muted); font-size: 0.85rem;">Todos los cambios se reflejan al instante en el portal web y en los launchers.</p>
+        </div>
+
+        <form id="textsForm" class="form-grid">
+          
+          <!-- Cheat Status Selector -->
+          <div class="form-group">
+            <label>Estado del Cheat</label>
+            <select id="stateSelect" class="form-select">
+              <option value="undetected">🟢 INDETECTADO (SEGURO)</option>
+              <option value="maintenance">🟡 EN MANTENIMIENTO</option>
+              <option value="updating">🔴 ACTUALIZANDO / PARCHE</option>
+            </select>
+          </div>
+
+          <!-- Version String -->
+          <div class="form-group">
+            <label>Versión del Cheat / Panel</label>
+            <input type="text" id="versionInput" class="form-input" placeholder="Ej: v3.2 VIP">
+          </div>
+
+          <!-- Title -->
+          <div class="form-group">
+            <label>Título del Banner</label>
+            <input type="text" id="titleInput" class="form-input" placeholder="Ej: RAFA PANEL - VIP 2026">
+          </div>
+
+          <!-- Subtitle -->
+          <div class="form-group">
+            <label>Subtítulo / Lema</label>
+            <input type="text" id="subtitleInput" class="form-input" placeholder="Ej: Sistema de Inyección Automática en la Nube">
+          </div>
+
+          <!-- Broadcast Message -->
+          <div class="form-group" style="grid-column: 1 / -1;">
+            <label>Mensaje de Alerta Global (Banner Superior)</label>
+            <input type="text" id="broadcastInput" class="form-input" placeholder="Ej: Servidores activos. Cheat indetectado...">
+          </div>
+
+          <!-- Toggle Show Alert -->
+          <div class="switch-wrapper" style="grid-column: 1 / -1;">
+            <div class="switch-label">
+              <span>Mostrar Alerta Global en la Web</span>
+              <small>Muestra u oculta la barra superior con el mensaje de alerta.</small>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="showAlertToggle" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div style="grid-column: 1 / -1; margin-top: 0.5rem;">
+            <button type="submit" class="btn-primary-large" style="width: auto;">
+              📢 Publicar Textos y Estados en Tiempo Real
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- TAB 4: ACTUALIZAR LAUNCHER .EXE -->
+    <div id="tab-launcher" class="tab-content" style="display: none;">
+      <div class="glass-panel" style="padding: 2rem;">
+        <div style="max-width: 600px;">
+          <h3 style="font-size: 1.3rem; margin-bottom: 0.5rem;">Subir Nuevo Launcher Ejecutable (Launcher_RafaPanel.exe)</h3>
+          <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
+            Si compilas una nueva versión del archivo <code>.exe</code> del launcher, puedes subirla aquí para que todos los usuarios descarguen la versión más reciente.
+          </p>
+
+          <div style="background: rgba(0, 0, 0, 0.3); border: 2px dashed var(--border-glow); border-radius: var(--radius-md); padding: 2.5rem; text-align: center; margin-bottom: 1.5rem;">
+            <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">🚀</div>
+            <h4 id="launcherFileName">Launcher_RafaPanel.exe</h4>
+            <p id="launcherFileSize" style="color: var(--primary); font-family: var(--font-mono); margin: 0.5rem 0 1.25rem;">Tamaño: Calculando...</p>
+            <button type="button" id="uploadLauncherBtn" class="btn-primary-large" style="margin: 0 auto;">
+              Subir Nuevo Launcher_RafaPanel.exe
+            </button>
+            <div id="launcherUploadProgress" class="upload-progress">Subiendo archivo ejecutable...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast">
+    <span id="toastIcon">✅</span>
+    <span id="toastMsg">Acción completada</span>
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>
