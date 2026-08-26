@@ -647,15 +647,15 @@ const server = http.createServer((req, res) => {
             const hiddenTotal = config.rafaSafe.features.filter(f => f.hidden).length;
             config.rafaSafe.hiddenCount = hiddenTotal;
 
-            // If 3 or more features are hidden, create update notification
-            if (hiddenTotal >= 3) {
-                config.rafaSafe.alert = {
-                    type: "update",
-                    title: "NUEVA ACTUALIZACIÓN DE MÓDULOS",
-                    message: "Se han actualizado y protegido las funciones del panel en la nube.",
-                    active: true
-                };
-            }
+            // Trigger In-Panel Update Notice on any change
+            config.rafaSafe.alert = {
+                type: "update",
+                title: "NUEVA ACTUALIZACIÓN DE MÓDULOS",
+                message: hidden 
+                    ? `La función '${feat.name}' ha sido ocultada por seguridad en la nube. Presiona 'Iniciar' para recargar.` 
+                    : `La función '${feat.name}' está disponible nuevamente en el panel.`,
+                active: true
+            };
 
             saveConfig(config);
 
