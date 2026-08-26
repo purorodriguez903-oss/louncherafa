@@ -1041,6 +1041,27 @@ input:checked + .slider:before {
   box-shadow: 0 0 15px rgba(0, 229, 255, 0.15);
 }
 
+/* Tab Panes Display Engine */
+.tab-pane {
+  display: none !important;
+}
+
+.tab-pane.active {
+  display: block !important;
+  animation: tabFadeIn 0.22s ease-out;
+}
+
+@keyframes tabFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Live Panel Mockup Styling (RAFA SAFE) */
 .panel-mockup-frame {
   background: #08090d;

@@ -126,6 +126,8 @@ function handleAppSwitch(appId) {
 
 // Tab Switching Engine (100% Reliable)
 function switchTab(tabId) {
+    console.log("Switching to tab:", tabId);
+
     // Deactivate all sidebar tab buttons
     document.querySelectorAll('.sidebar-tab-btn').forEach(btn => {
         btn.classList.remove('active');
@@ -134,13 +136,17 @@ function switchTab(tabId) {
         }
     });
 
-    // Deactivate all tab panes
-    document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+    // Deactivate all tab panes (both CSS class and inline display)
+    document.querySelectorAll('.tab-pane').forEach(pane => {
+        pane.classList.remove('active');
+        pane.style.display = 'none';
+    });
 
     // Activate selected pane
     const targetPane = document.getElementById('tab-' + tabId);
     if (targetPane) {
         targetPane.classList.add('active');
+        targetPane.style.display = 'block';
     }
 
     // Dynamic data loaders
