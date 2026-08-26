@@ -1,0 +1,21 @@
+{
+  "name": "rafapanel-web-server",
+  "version": "3.2.0",
+  "description": "Servidor Web 24/7 y Panel de Administracion para RafaPanel VIP y gestion de DLLs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "rafapanel",
+    "cheat-loader",
+    "dll-manager",
+    "cloud-injector"
+  ],
+  "author": "RafaPanel",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

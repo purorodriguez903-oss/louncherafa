@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: rafapanel-cloud
+    env: node
+    plan: free
+    buildCommand: "echo 'Listo para iniciar'"
+    startCommand: "node server.js"
+    envVars:
+      - key: PORT
+        value: 3000

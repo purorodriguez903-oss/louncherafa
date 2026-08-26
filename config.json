@@ -1,0 +1,104 @@
+{
+  "server": {
+    "port": 3000,
+    "adminPassword": "admin"
+  },
+  "security": {
+    "loginRequired": true,
+    "accessKey": "RAFAPANEL",
+    "allowFreeAccess": false
+  },
+  "status": {
+    "state": "undetected",
+    "stateLabel": "INDETECTADO (SEGURO)",
+    "version": "v3.2 VIP",
+    "title": "RAFA PANEL - VIP 2026",
+    "subtitle": "Sistema de Inyección Automática en la Nube",
+    "broadcastAlert": "Servidores 100% activos y seguros. Todos los módulos operativos.",
+    "showAlert": true,
+    "lastUpdated": "2026-08-26T01:20:00.000Z"
+  },
+  "dlls": [
+    {
+      "id": "edkide",
+      "filename": "edkide.dll",
+      "name": "Cheat Principal VIP (Aim + ESP)",
+      "description": "Módulo DLL central inyectado en el emulador.",
+      "category": "Core Cheat",
+      "size": "2.6 MB",
+      "updatedAt": "2026-08-26T01:20:00.000Z",
+      "exists": true
+    },
+    {
+      "id": "minhook",
+      "filename": "minhook.x64.dll",
+      "name": "MinHook Engine x64",
+      "description": "Controlador de ganchos de memoria e intercepciones.",
+      "category": "Hooking",
+      "size": "23 KB",
+      "updatedAt": "2026-08-26T01:20:00.000Z",
+      "exists": true
+    },
+    {
+      "id": "libcurl",
+      "filename": "libcurl.dll",
+      "name": "LibCurl Network & Auth",
+      "description": "Librería de comunicaciones seguras de red.",
+      "category": "Network",
+      "size": "700.5 KB",
+      "updatedAt": "2026-08-26T01:20:00.000Z",
+      "exists": true
+    },
+    {
+      "id": "glew32",
+      "filename": "glew32.dll",
+      "name": "GLEW 32 Graphics Engine",
+      "description": "Extensiones gráficas de renderizado OpenGL.",
+      "category": "Graphics",
+      "size": "498 KB",
+      "updatedAt": "2026-08-26T01:20:00.000Z",
+      "exists": true
+    },
+    {
+      "id": "windivert",
+      "filename": "WinDivert.dll",
+      "name": "WinDivert Packet Filter x86",
+      "description": "Controlador de paquetes para función FakeLag 32-bit.",
+      "category": "Network Filter",
+      "size": "46.5 KB",
+      "updatedAt": "2026-08-26T01:20:00.000Z",
+      "exists": true
+    },
+    {
+      "id": "windivert64",
+      "filename": "WinDivert64.dll",
+      "name": "WinDivert Packet Filter x64",
+      "description": "Controlador de paquetes para función FakeLag 64-bit.",
+      "category": "Network Filter",
+      "size": "22 KB",
+      "updatedAt": "2026-08-26T01:20:00.000Z",
+      "exists": true
+    },
+    {
+      "id": "zdll",
+      "filename": "z.dll",
+      "name": "Z-Lib Auxiliary Engine",
+      "description": "Compresión y descompresión de memoria rápida.",
+      "category": "Utility",
+      "size": "87.5 KB",
+      "updatedAt": "2026-08-26T01:20:00.000Z",
+      "exists": true
+    }
+  ],
+  "stats": {
+    "dllDownloads": 348,
+    "launcherDownloads": 192,
+    "activeUsers": 54
+  },
+  "launcher": {
+    "filename": "Launcher_RafaPanel.exe",
+    "size": "53.5 KB",
+    "updatedAt": "2026-08-26T06:10:29.310Z",
+    "exists": true
+  }
+}
