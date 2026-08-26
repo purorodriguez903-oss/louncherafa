@@ -1,1 +1,186 @@
-lkkl;kl;k
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RAFA PANEL - Portal VIP & Servidor 24/7</title>
+  <meta name="description" content="Plataforma oficial de RafaPanel VIP. Descargas automáticas del Launcher y DLLs indetectadas las 24 horas.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
+</head>
+<body>
+
+  <!-- Top Alert Banner -->
+  <div id="alertBanner" class="alert-banner">
+    <div class="alert-pulse"></div>
+    <span id="alertText">Servidores 100% activos y seguros. Todos los módulos operativos.</span>
+  </div>
+
+  <!-- Navigation -->
+  <header class="navbar">
+    <a href="/" class="brand">
+      <div class="brand-logo">⚡</div>
+      <div class="brand-info">
+        <h1 id="navTitle">RAFA PANEL</h1>
+        <span id="navSubtitle">CLOUD INJECTOR 2026</span>
+      </div>
+    </a>
+    <div class="nav-links">
+      <a href="#dlls-section" class="nav-btn nav-btn-admin">📦 7 DLLs</a>
+      <a href="#guide-section" class="nav-btn nav-btn-admin">📖 Guía</a>
+      <a href="/admin.html" class="nav-btn nav-btn-admin">🔐 Panel Admin</a>
+      <a href="/api/download/launcher" class="nav-btn nav-btn-primary">⬇ Descargar Launcher</a>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container">
+    
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="status-badge" id="heroBadge">
+        <div class="status-dot"></div>
+        <span id="statusStateLabel">INDETECTADO (SEGURO)</span>
+      </div>
+      <h2 id="heroTitle">RAFA PANEL VIP 2026</h2>
+      <p id="heroSubtitle">Sistema de inyección en la nube conectado 24/7. Actualizaciones automáticas de DLLs en tiempo real sin necesidad de cambiar de ejecutable.</p>
+      
+      <div class="hero-actions">
+        <a href="/api/download/launcher" class="btn-primary-large">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Descargar Launcher (.EXE)
+        </a>
+        <a href="/api/download/edkide" class="btn-secondary-large">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Descargar DLL Directa (edkide.dll)
+        </a>
+      </div>
+    </section>
+
+    <!-- Metrics Bar -->
+    <section class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-num" id="statDllDownloads">348+</div>
+        <div class="metric-label">Descargas de DLLs</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-num" id="statLauncherDownloads">192+</div>
+        <div class="metric-label">Launchers Activos</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-num" id="statUptime">99.9%</div>
+        <div class="metric-label">Uptime Servidor 24/7</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-num" id="statVersion">v3.2 VIP</div>
+        <div class="metric-label">Versión de Cheat</div>
+      </div>
+    </section>
+
+    <!-- 7 DLLs Table Section -->
+    <section id="dlls-section" style="margin-top: 3.5rem;">
+      <div class="section-title">
+        <div>
+          <h3>Módulos y DLLs en la Nube (7 Archivos)</h3>
+          <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem;">
+            Todos los módulos se sincronizan e inyectan automáticamente en tu emulador.
+          </p>
+        </div>
+      </div>
+
+      <div class="glass-panel">
+        <table class="dll-table">
+          <thead>
+            <tr>
+              <th>Nombre del Módulo</th>
+              <th>Categoría</th>
+              <th>Tamaño</th>
+              <th>Última Actualización</th>
+              <th>Descarga</th>
+            </tr>
+          </thead>
+          <tbody id="dllTableBody">
+            <!-- Loaded dynamically via app.js -->
+            <tr>
+              <td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                Cargando módulos desde el servidor 24/7...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Features Grid -->
+    <section style="margin-top: 4.5rem;">
+      <div class="section-title">
+        <h3>Funciones VIP Incluidas</h3>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🎯</div>
+          <h4>Aimbot Predictivo</h4>
+          <p>Mira fija a cabeza/cuello con suavizado regulable (FOV Circle) para máxima discreción y seguridad.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">👁️</div>
+          <h4>ESP 3D Box & Skeleton</h4>
+          <p>Líneas de distancia, cajas 3D, esqueleto, nombre y barra de salud visible a través de cualquier pared.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🚀</div>
+          <h4>Fly Player & Speed</h4>
+          <p>Modificadores de física y movimiento en memoria para flotar y posicionamiento táctico ultra-rápido.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h4>FakeLag Network Filter</h4>
+          <p>Desincronización de paquetes con WinDivert para evitar disparos enemigos en enfrentamientos directos.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🛡️</div>
+          <h4>Auto Bypass & Inyección</h4>
+          <p>Detección automática de procesos BlueStacks, LDPlayer, MEmu, SmartGaGa, Nox y MuMu sin configurar nada.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">☁️</div>
+          <h4>Sincronización en la Nube</h4>
+          <p>Actualizaciones en caliente directas desde el servidor web sin tener que re-descargar el launcher ejecutable.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step by step guide -->
+    <section id="guide-section" style="margin-top: 3rem;">
+      <div class="section-title">
+        <h3>¿Cómo Usar RafaPanel en 3 Pasos?</h3>
+      </div>
+      <div class="guide-steps">
+        <div class="step-card">
+          <div class="step-num">01</div>
+          <h4>Abre tu Emulador</h4>
+          <p>Inicia BlueStacks, LDPlayer, MEmu, SmartGaGa o MuMu Player y abre tu juego favorito.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">02</div>
+          <h4>Ejecuta el Launcher</h4>
+          <p>Abre <code>Launcher_RafaPanel.exe</code> como Administrador. Conectará e inyectará automáticamente.</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">03</div>
+          <h4>Presiona INSERT</h4>
+          <p>Dentro del juego presiona la tecla <code>INSERT</code> en tu teclado para abrir el menú VIP flotante.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <p>&copy; 2026 RAFA PANEL VIP. Servidor Web Activo 24 Horas. Todos los derechos reservados.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
