@@ -1,4 +1,4 @@
-// Admin Dashboard Controller for RafaPanel Cloud with Dual-App Switcher & 42 Cheat Features
+// Admin Dashboard Controller for RafaPanel Cloud with 100% Separated Dual-App Workspaces
 let currentAdminToken = localStorage.getItem('rafaAdminToken') || sessionStorage.getItem('rafaAdminToken') || '';
 let emulatorsChart = null;
 let currentConfig = null;
@@ -106,53 +106,109 @@ function logoutAdmin() {
     location.reload();
 }
 
-// Dual-App Switcher (RAFA Launcher <-> RAFA SAFE)
+// ========================================================
+// 100% PURE SEPARATION: DUAL-APP SWITCHER
+// ========================================================
 function handleAppSwitch(appId) {
     const launcherNav = document.getElementById('launcherNavGroup');
     const safeNav = document.getElementById('safeNavGroup');
+    const workspaceLauncher = document.getElementById('appWorkspaceLauncher');
+    const workspaceSafe = document.getElementById('appWorkspaceSafe');
+    const badge = document.getElementById('activeAppBadgeNav');
 
     if (appId === 'rafa_safe') {
+        // HIDE LAUNCHER WORKSPACE & SIDEBAR
         launcherNav.style.display = 'none';
+        workspaceLauncher.style.display = 'none';
+
+        // SHOW RAFA SAFE WORKSPACE & SIDEBAR
         safeNav.style.display = 'flex';
-        switchTab('mockup_safe');
-        showToast("Cambiado a: RAFA SAFE (Panel Cloud)");
+        workspaceSafe.style.display = 'block';
+
+        if (badge) {
+            badge.innerText = "APP: RAFA SAFE (PANEL CLOUD)";
+            badge.style.color = "#a855f7";
+        }
+
+        switchSafeTab('mockup_safe');
+        showToast("Entrando al menú exclusivo: RAFA SAFE");
     } else {
-        launcherNav.style.display = 'flex';
+        // HIDE RAFA SAFE WORKSPACE & SIDEBAR
         safeNav.style.display = 'none';
-        switchTab('dash_launcher');
-        showToast("Cambiado a: RAFA Launcher (DX11)");
+        workspaceSafe.style.display = 'none';
+
+        // SHOW LAUNCHER WORKSPACE & SIDEBAR
+        launcherNav.style.display = 'flex';
+        workspaceLauncher.style.display = 'block';
+
+        if (badge) {
+            badge.innerText = "APP: RAFA LAUNCHER (DX11)";
+            badge.style.color = "var(--primary)";
+        }
+
+        switchLauncherTab('dash_launcher');
+        showToast("Entrando al menú exclusivo: RAFA Launcher");
     }
 }
 
-// Tab Switching Engine (100% Reliable)
-function switchTab(tabId) {
-    console.log("Switching to tab:", tabId);
+// Switch tabs inside RAFA Launcher Workspace
+function switchLauncherTab(tabId) {
+    const navGroup = document.getElementById('launcherNavGroup');
+    const workspace = document.getElementById('appWorkspaceLauncher');
 
-    // Deactivate all sidebar tab buttons
-    document.querySelectorAll('.sidebar-tab-btn').forEach(btn => {
+    // Remove active from launcher tab buttons
+    navGroup.querySelectorAll('.sidebar-tab-btn').forEach(btn => {
         btn.classList.remove('active');
         if (btn.getAttribute('data-tab') === tabId) {
             btn.classList.add('active');
         }
     });
 
-    // Deactivate all tab panes (both CSS class and inline display)
-    document.querySelectorAll('.tab-pane').forEach(pane => {
+    // Hide all launcher panes
+    workspace.querySelectorAll('.tab-pane').forEach(pane => {
         pane.classList.remove('active');
         pane.style.display = 'none';
     });
 
-    // Activate selected pane
+    // Show target pane
     const targetPane = document.getElementById('tab-' + tabId);
     if (targetPane) {
         targetPane.classList.add('active');
         targetPane.style.display = 'block';
     }
 
-    // Dynamic data loaders
     if (tabId === 'keys_launcher') loadKeysTable();
     if (tabId === 'dash_launcher') loadLiveStats();
-    if (tabId.includes('_safe')) loadSafePanelData();
+}
+
+// Switch tabs inside RAFA SAFE Workspace
+function switchSafeTab(tabId) {
+    const navGroup = document.getElementById('safeNavGroup');
+    const workspace = document.getElementById('appWorkspaceSafe');
+
+    // Remove active from safe tab buttons
+    navGroup.querySelectorAll('.sidebar-tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.getAttribute('data-tab') === tabId) {
+            btn.classList.add('active');
+        }
+    });
+
+    // Hide all safe panes
+    workspace.querySelectorAll('.tab-pane').forEach(pane => {
+        pane.classList.remove('active');
+        pane.style.display = 'none';
+    });
+
+    // Show target pane
+    const targetPane = document.getElementById('tab-' + tabId);
+    if (targetPane) {
+        targetPane.classList.add('active');
+        targetPane.style.display = 'block';
+    }
+
+    loadSafePanelData();
+    if (tabId === 'keys_safe') loadSafeKeysTable();
 }
 
 // Emulators Chart.js Setup
@@ -338,14 +394,29 @@ async function loadKeysTable() {
         });
         const data = await res.json();
         allKeys = data.keys || [];
-        renderKeysTable(allKeys);
+        renderKeysTable(allKeys, 'keysTableBody');
     } catch (e) {
         console.error('Error fetching keys:', e);
     }
 }
 
-function renderKeysTable(keys) {
-    const tbody = document.getElementById('keysTableBody');
+async function loadSafeKeysTable() {
+    try {
+        const res = await fetch('/api/keys/list', {
+            headers: getAuthHeaders()
+        });
+        const data = await res.json();
+        allKeys = data.keys || [];
+        renderKeysTable(allKeys, 'keysSafeTableBody');
+    } catch (e) {
+        console.error('Error fetching safe keys:', e);
+    }
+}
+
+function renderKeysTable(keys, tbodyId = 'keysTableBody') {
+    const tbody = document.getElementById(tbodyId);
+    if (!tbody) return;
+
     if (keys.length === 0) {
         tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-dim); padding: 2rem;">No hay claves generadas aún.</td></tr>`;
         return;
@@ -369,7 +440,7 @@ function renderKeysTable(keys) {
                 <td>${hwidDisplay}</td>
                 <td>${statusBadge}</td>
                 <td style="text-align: right;">
-                    ${k.hwid ? `<button onclick="resetHwid('${k.key}')" class="btn-action" style="color: var(--warning); border-color: rgba(251, 191, 36, 0.4); margin-right: 0.4rem;" title="Liberar HWID">🔄 Reset HWID</button>` : ''}
+                    ${k.hwid ? `<button onclick="resetHwid('${k.key}')" class="btn-action" style="color: var(--warning); border-color: rgba(251, 191, 36, 0.4); margin-right: 0.4rem;" title="Liberar HWID">🔄 Reset</button>` : ''}
                     <button onclick="renewKey('${k.key}')" class="btn-action" style="color: var(--success); border-color: rgba(0, 255, 170, 0.4); margin-right: 0.4rem;" title="Añadir 30 días">+30D</button>
                     <button onclick="deleteKey('${k.key}')" class="btn-action" style="color: var(--danger); border-color: rgba(239, 68, 68, 0.4);" title="Eliminar clave">🗑</button>
                 </td>
@@ -380,18 +451,19 @@ function renderKeysTable(keys) {
 
 function filterKeysTable() {
     const q = document.getElementById('searchKeyInput').value.toLowerCase().trim();
-    if (!q) return renderKeysTable(allKeys);
+    if (!q) return renderKeysTable(allKeys, 'keysTableBody');
 
     const filtered = allKeys.filter(k => 
         k.key.toLowerCase().includes(q) || 
         (k.label && k.label.toLowerCase().includes(q)) || 
         (k.hwid && k.hwid.toLowerCase().includes(q))
     );
-    renderKeysTable(filtered);
+    renderKeysTable(filtered, 'keysTableBody');
 }
 
 // Generate Key Modal
-function openGenerateModal() {
+function openGenerateModal(defaultLabel = "Cliente VIP") {
+    document.getElementById('keyLabelInput').value = defaultLabel;
     document.getElementById('generateKeyModal').classList.add('show');
 }
 function closeGenerateModal() {
@@ -419,6 +491,7 @@ async function submitGenerateKeys(e) {
             closeGenerateModal();
             showToast(`¡Se han generado ${data.created.length} nueva(s) clave(s)!`);
             loadKeysTable();
+            loadSafeKeysTable();
         } else {
             showToast("Error al generar claves", false);
         }
@@ -439,6 +512,7 @@ async function resetHwid(key) {
         if (data.success) {
             showToast("HWID reseteado con éxito");
             loadKeysTable();
+            loadSafeKeysTable();
         }
     } catch (e) {
         showToast("Error al resetear HWID", false);
@@ -457,6 +531,7 @@ async function deleteKey(key) {
         if (data.success) {
             showToast("Clave eliminada");
             loadKeysTable();
+            loadSafeKeysTable();
         }
     } catch (e) {
         showToast("Error al eliminar", false);
@@ -474,6 +549,7 @@ async function renewKey(key) {
         if (data.success) {
             showToast(`Clave extendida +30 Días (${data.remaining})`);
             loadKeysTable();
+            loadSafeKeysTable();
         }
     } catch (e) {
         showToast("Error al renovar", false);
@@ -504,7 +580,7 @@ async function loadSafePanelData() {
 
             const noticeBox = document.getElementById('safeUpdateNotice');
             if (noticeBox) {
-                noticeBox.style.display = hiddenCount >= 3 ? 'flex' : 'none';
+                noticeBox.style.display = hiddenCount > 0 ? 'flex' : 'none';
             }
         }
     } catch (e) {
