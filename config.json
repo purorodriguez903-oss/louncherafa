@@ -1,0 +1,217 @@
+{
+  "server": {
+    "port": 3000,
+    "adminPassword": "Rafa2016yy@"
+  },
+  "security": {
+    "loginRequired": true,
+    "accessKey": "RAFAPANEL",
+    "allowFreeAccess": false
+  },
+  "killSwitch": {
+    "active": false,
+    "reason": "Juego en mantenimiento o actualización. Inyección pausada por seguridad."
+  },
+  "discord": {
+    "enabled": false,
+    "webhookUrl": "",
+    "notifyOnDll": true,
+    "notifyOnKey": true,
+    "notifyOnKillSwitch": true,
+    "notifyOnAlert": true
+  },
+  "status": {
+    "state": "undetected",
+    "stateLabel": "INDETECTADO (SEGURO)",
+    "version": "v3.2 VIP",
+    "title": "RAFA PANEL - VIP 2026",
+    "subtitle": "Sistema de Inyección Automática en la Nube",
+    "broadcastAlert": "Servidores 100% activos y seguros. Todos los módulos operativos.",
+    "showAlert": true,
+    "lastUpdated": "2026-08-26T02:25:00.000Z"
+  },
+  "rafaSafe": {
+    "version": "v4.2 SAFE",
+    "status": "online",
+    "statusLabel": "INDETECTADO (SEGURO)",
+    "alert": {
+      "type": "custom",
+      "title": "ALERTA DEL SISTEMA",
+      "message": "",
+      "active": false
+    },
+    "features": [
+      {
+        "id": "aimbot_fov",
+        "name": "Aimbot 360 & FOV Circular",
+        "category": "Combat",
+        "active": true,
+        "hidden": false
+      },
+      {
+        "id": "aim_lock",
+        "name": "Aim Lock Cabeza / Cuello",
+        "category": "Combat",
+        "active": true,
+        "hidden": false
+      },
+      {
+        "id": "esp_box",
+        "name": "ESP Box & Skeleton 2D/3D",
+        "category": "Visuals",
+        "active": true,
+        "hidden": false
+      },
+      {
+        "id": "esp_lines",
+        "name": "ESP Lines (Snaplines)",
+        "category": "Visuals",
+        "active": true,
+        "hidden": false
+      },
+      {
+        "id": "esp_distance",
+        "name": "ESP Distancia & Nombres",
+        "category": "Visuals",
+        "active": true,
+        "hidden": false
+      },
+      {
+        "id": "bypass_ff",
+        "name": "Safe Memory Bypass (FF)",
+        "category": "Bypass",
+        "active": true,
+        "hidden": false
+      },
+      {
+        "id": "no_recoil",
+        "name": "Zero Recoil & Spread 0%",
+        "category": "Combat",
+        "active": true,
+        "hidden": false
+      },
+      {
+        "id": "fast_speed",
+        "name": "Velocidad de Movimiento x2",
+        "category": "Movement",
+        "active": true,
+        "hidden": false
+      },
+      {
+        "id": "ghost_mode",
+        "name": "Ghost Mode & Desync",
+        "category": "Misc",
+        "active": true,
+        "hidden": false
+      }
+    ],
+    "hiddenCount": 0
+  },
+  "keys": [
+    {
+      "key": "RAFA-VIP-LIFETIME-2026",
+      "duration": "lifetime",
+      "durationDays": -1,
+      "label": "Master VIP Key",
+      "createdAt": "2026-08-26T02:00:00.000Z",
+      "expiresAt": null,
+      "hwid": null,
+      "usedAt": null,
+      "status": "active"
+    },
+    {
+      "key": "RAFA-TRIAL-7DAYS-DEMO",
+      "duration": "7d",
+      "durationDays": 7,
+      "label": "Prueba 7 Días",
+      "createdAt": "2026-08-26T02:00:00.000Z",
+      "expiresAt": null,
+      "hwid": null,
+      "usedAt": null,
+      "status": "active"
+    }
+  ],
+  "stats": {
+    "dllDownloads": 0,
+    "launcherDownloads": 0,
+    "totalKeyVerifications": 0
+  },
+  "dlls": [
+    {
+      "id": "edkide",
+      "filename": "edkide.dll",
+      "name": "Cheat Principal VIP (Aim + ESP)",
+      "description": "Módulo DLL central inyectado en el emulador.",
+      "category": "Core Cheat",
+      "size": "2.6 MB",
+      "updatedAt": "2026-08-26T01:20:00.000Z",
+      "exists": true
+    },
+    {
+      "id": "minhook",
+      "filename": "minhook.x64.dll",
+      "name": "MinHook Engine x64",
+      "description": "Controlador de ganchos de memoria e intercepciones.",
+      "category": "Hooking",
+      "size": "23 KB",
+      "updatedAt": "2026-08-26T01:20:00.000Z",
+      "exists": true
+    },
+    {
+      "id": "libcurl",
+      "filename": "libcurl.dll",
+      "name": "LibCurl Network & Auth",
+      "description": "Librería de comunicaciones seguras de red.",
+      "category": "Network",
+      "size": "700.5 KB",
+      "updatedAt": "2026-08-26T01:20:00.000Z",
+      "exists": true
+    },
+    {
+      "id": "glew32",
+      "filename": "glew32.dll",
+      "name": "GLEW 32 Graphics Engine",
+      "description": "Extensiones gráficas de renderizado OpenGL.",
+      "category": "Graphics",
+      "size": "498 KB",
+      "updatedAt": "2026-08-26T01:20:00.000Z",
+      "exists": true
+    },
+    {
+      "id": "windivert",
+      "filename": "WinDivert.dll",
+      "name": "WinDivert Packet Filter x86",
+      "description": "Controlador de paquetes para función FakeLag 32-bit.",
+      "category": "Network Filter",
+      "size": "46.5 KB",
+      "updatedAt": "2026-08-26T01:20:00.000Z",
+      "exists": true
+    },
+    {
+      "id": "windivert64",
+      "filename": "WinDivert64.dll",
+      "name": "WinDivert Packet Filter x64",
+      "description": "Controlador de paquetes para función FakeLag 64-bit.",
+      "category": "Network Filter",
+      "size": "22 KB",
+      "updatedAt": "2026-08-26T01:20:00.000Z",
+      "exists": true
+    },
+    {
+      "id": "zdll",
+      "filename": "z.dll",
+      "name": "Z-Lib Auxiliary Engine",
+      "description": "Compresión y descompresión de memoria rápida.",
+      "category": "Utility",
+      "size": "87.5 KB",
+      "updatedAt": "2026-08-26T01:20:00.000Z",
+      "exists": true
+    }
+  ],
+  "launcher": {
+    "filename": "Launcher_RafaPanel.exe",
+    "size": "53.5 KB",
+    "updatedAt": "2026-08-26T06:10:29.310Z",
+    "exists": true
+  }
+}
