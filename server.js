@@ -1852,7 +1852,6 @@ const server = http.createServer((req, res) => {
                 return sendJson(404, { error: 'Launcher_RafaPanel.exe no disponible' });
             }
 
-            const config = getConfig();
             config.stats.launcherDownloads = (config.stats.launcherDownloads || 0) + 1;
             saveConfig(config);
 
