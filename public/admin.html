@@ -400,6 +400,23 @@
                 </div>
                 <button type="submit" class="btn-submit" id="btnUploadLauncherSubmit">Subir Nuevo Launcher a la Nube ➔</button>
               </form>
+
+              <!-- MediaFire / External URL Direct Link Configuration -->
+              <div style="margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border-color);">
+                <form id="launcherUrlForm" onsubmit="handleSaveLauncherUrl(event)">
+                  <div class="form-group">
+                    <label style="display: flex; justify-content: space-between; align-items: center;">
+                      <span>🔗 Enlace de MediaFire / Mega (Opcional):</span>
+                      <span id="launcherUrlBadge" class="tier-pill" style="background: rgba(0, 229, 255, 0.15); color: var(--primary); font-size: 0.72rem;">Nube Directa</span>
+                    </label>
+                    <input type="url" id="adminLauncherExternalUrl" class="form-control" placeholder="https://www.mediafire.com/file/.../Launcher_RafaPanel.exe/file">
+                    <p style="color: var(--text-dim); font-size: 0.78rem; margin-top: 0.35rem;">
+                      Si pegas tu enlace de MediaFire, el botón de la web pública los enviará directo a tu descarga de MediaFire.
+                    </p>
+                  </div>
+                  <button type="submit" class="btn-submit" id="btnSaveLauncherUrl" style="background: linear-gradient(135deg, #0284c7, #2563eb);">💾 Guardar Enlace de Descarga</button>
+                </form>
+              </div>
             </div>
 
             <!-- Column 2: Launcher Update Logs & History -->

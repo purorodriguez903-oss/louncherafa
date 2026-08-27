@@ -283,6 +283,20 @@ async function loadAllAdminData() {
         if (currentConfig.launcher) {
             document.getElementById('adminLauncherFilename').innerText = currentConfig.launcher.filename;
             document.getElementById('adminLauncherMeta').innerText = `Tamaño: ${currentConfig.launcher.size || '--'} • Actualizado: ${new Date(currentConfig.launcher.updatedAt || Date.now()).toLocaleDateString()}`;
+            const extUrlInput = document.getElementById('adminLauncherExternalUrl');
+            const badgeEl = document.getElementById('launcherUrlBadge');
+            if (extUrlInput) extUrlInput.value = currentConfig.launcher.externalUrl || '';
+            if (badgeEl) {
+                if (currentConfig.launcher.externalUrl && currentConfig.launcher.externalUrl.length > 5) {
+                    badgeEl.innerText = 'MediaFire / Externo Activo';
+                    badgeEl.style.background = 'rgba(16, 185, 129, 0.15)';
+                    badgeEl.style.color = 'var(--success)';
+                } else {
+                    badgeEl.innerText = 'Nube Directa';
+                    badgeEl.style.background = 'rgba(0, 229, 255, 0.15)';
+                    badgeEl.style.color = 'var(--primary)';
+                }
+            }
         }
         renderLauncherLogs(currentConfig.launcherLogs, currentConfig.launcher);
 
@@ -1032,4 +1046,32 @@ async function testDiscordWebhook() {
     }
     showToast("Enviando mensaje de prueba a Discord...");
     await saveDiscordConfig({ preventDefault: () => {} });
+}
+
+// Save External MediaFire / Cloud Download URL for Launcher
+async function handleSaveLauncherUrl(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const externalUrl = (document.getElementById('adminLauncherExternalUrl').value || '').trim();
+    const btn = document.getElementById('btnSaveLauncherUrl');
+    if (btn) btn.disabled = true;
+    showToast("Guardando enlace de descarga...");
+
+    try {
+        const res = await fetch('/api/config/launcher-url', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ externalUrl })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast(data.message || "Enlace guardado con éxito");
+            loadAllAdminData();
+        } else {
+            showToast(data.error || "Error al guardar", false);
+        }
+    } catch (err) {
+        showToast("Error de conexión", false);
+    } finally {
+        if (btn) btn.disabled = false;
+    }
 }

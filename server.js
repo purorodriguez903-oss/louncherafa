@@ -1794,6 +1794,22 @@ const server = http.createServer((req, res) => {
         });
     }
 
+    // 17.2 Update Launcher External Download URL (MediaFire / Mega / Drive)
+    if (pathname === '/api/config/launcher-url' && req.method === 'POST') {
+        return readBody((err, data) => {
+            if (!checkAdminAuth(data.adminPassword || data.password)) return sendJson(401, { error: 'No autorizado' });
+            const config = getConfig();
+            if (!config.launcher) config.launcher = {};
+            config.launcher.externalUrl = (data.externalUrl || '').trim();
+            saveConfig(config);
+            return sendJson(200, {
+                success: true,
+                message: config.launcher.externalUrl ? 'Enlace de descarga de MediaFire guardado correctamente.' : 'Descarga directa desde servidor activada.',
+                externalUrl: config.launcher.externalUrl
+            });
+        });
+    }
+
     // 18. Universal Download Handler (Launcher .EXE & All 7 DLL Modules)
     const downloadMatch = pathname.match(/^\/(?:api\/download|download)\/([a-zA-Z0-9_.-]+)$/i);
     if (downloadMatch && req.method === 'GET') {
@@ -1806,9 +1822,20 @@ const server = http.createServer((req, res) => {
         ].includes(queryTarget);
 
         if (isLauncherTarget || queryTarget.endsWith('.exe')) {
+            const config = getConfig();
+
+            // If an external MediaFire / Mega link is configured, redirect instantly
+            if (config.launcher && config.launcher.externalUrl && config.launcher.externalUrl.trim().length > 5) {
+                config.stats.launcherDownloads = (config.stats.launcherDownloads || 0) + 1;
+                saveConfig(config);
+                res.writeHead(302, { 'Location': config.launcher.externalUrl.trim() });
+                return res.end();
+            }
+
             let filePath = path.join(UPLOADS_DIR, 'Launcher_RafaPanel.exe');
             if (!fs.existsSync(filePath)) {
                 const candidates = [
+                    path.join(__dirname, '..', 'exe del louncher pa todo', 'Launcher_RafaPanel.exe'),
                     path.join(__dirname, '..', 'louncherexe', 'Launcher_RafaPanel.exe'),
                     path.join(__dirname, '..', 'Louncher RF', 'Launcher_RafaPanel.exe'),
                     path.join(__dirname, '..', 'Louncher RF', 'x64', 'x64', 'Release', 'example.exe')
