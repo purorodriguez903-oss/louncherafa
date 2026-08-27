@@ -257,54 +257,163 @@ body::after {
   line-height: 1.6;
 }
 
-.hero-actions {
+/* Hero Split 2-Column Desktop Layout */
+.hero-split-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
+  gap: 2.25rem;
+  align-items: stretch;
+  text-align: left;
+  margin-top: 1.25rem;
+}
+
+.hero-left-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+.hero-right-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.btn-hero-main-download {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 1.25rem;
-  flex-wrap: wrap;
-}
-
-.btn-primary-large {
-  padding: 1.1rem 2.5rem;
+  gap: 1.15rem;
+  padding: 1.15rem 1.4rem;
   border-radius: var(--radius-md);
-  background: linear-gradient(135deg, var(--primary), #0284c7);
+  background: linear-gradient(135deg, var(--primary) 0%, #0284c7 100%);
   color: #030712;
-  font-size: 1.05rem;
+  text-decoration: none;
   font-weight: 800;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.75rem;
-  box-shadow: 0 0 30px var(--primary-glow);
+  box-shadow: 0 0 35px var(--primary-glow);
   transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.btn-primary-large:hover {
-  transform: translateY(-3px) scale(1.02);
-  box-shadow: 0 0 45px var(--primary);
+.btn-hero-main-download:hover {
+  transform: translateY(-3px) scale(1.01);
+  box-shadow: 0 0 50px var(--primary);
 }
 
-.btn-secondary-large {
-  padding: 1.1rem 2.2rem;
-  border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.05);
-  color: #fff;
-  border: 1px solid var(--border-color);
-  font-size: 1.05rem;
+.btn-main-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: rgba(3, 7, 18, 0.25);
+  display: grid;
+  place-items: center;
+  color: #030712;
+  flex-shrink: 0;
+}
+
+.btn-main-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex-grow: 1;
+}
+
+.btn-main-text .btn-title {
+  font-size: 1.15rem;
+  font-weight: 900;
+  letter-spacing: 0.3px;
+  color: #030712;
+}
+
+.btn-main-text .btn-sub {
+  font-size: 0.78rem;
+  color: rgba(3, 7, 18, 0.8);
   font-weight: 700;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
+}
+
+.btn-arrow-glow {
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: #030712;
+  transition: transform 0.25s ease;
+}
+
+.btn-hero-main-download:hover .btn-arrow-glow {
+  transform: translateX(4px);
+}
+
+/* Stacked Buttons Column */
+.hero-buttons-stack {
+  display: flex;
+  flex-direction: column;
   gap: 0.75rem;
+}
+
+.stack-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1.25rem;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
   transition: var(--transition);
 }
 
-.btn-secondary-large:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: var(--secondary);
-  box-shadow: 0 0 25px var(--secondary-glow);
-  transform: translateY(-3px);
+.stack-btn:hover {
+  transform: translateX(4px);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.stack-btn-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.stack-icon {
+  font-size: 1.25rem;
+}
+
+.stack-arrow {
+  color: var(--text-dim);
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.stack-btn:hover .stack-arrow {
+  color: var(--primary);
+  transform: translateX(3px);
+}
+
+.stack-btn-ff:hover {
+  border-color: rgba(239, 68, 68, 0.6);
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.stack-btn-emu:hover {
+  border-color: rgba(0, 229, 255, 0.6);
+  background: rgba(0, 229, 255, 0.12);
+}
+
+.stack-btn-discord:hover {
+  border-color: rgba(88, 101, 242, 0.6);
+  background: rgba(88, 101, 242, 0.12);
+}
+
+.stack-btn-wa:hover {
+  border-color: rgba(37, 211, 102, 0.6);
+  background: rgba(37, 211, 102, 0.12);
+}
+
+@media (max-width: 991px) {
+  .hero-split-layout {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
 }
 
 /* Metrics Bar */
