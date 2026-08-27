@@ -1794,61 +1794,91 @@ const server = http.createServer((req, res) => {
         });
     }
 
-    // 18. Download Launcher Executable (.EXE)
-    if ((pathname === '/api/download/launcher' || pathname === '/download/launcher' || pathname === '/api/download/Launcher_RafaPanel.exe') && req.method === 'GET') {
-        const filePath = path.join(UPLOADS_DIR, 'Launcher_RafaPanel.exe');
-        if (!fs.existsSync(filePath)) return sendJson(404, { error: 'Launcher_RafaPanel.exe no está subido aún en el servidor' });
-
-        const config = getConfig();
-        config.stats.launcherDownloads = (config.stats.launcherDownloads || 0) + 1;
-        saveConfig(config);
-
-        res.writeHead(200, {
-            'Content-Type': 'application/octet-stream',
-            'Content-Disposition': 'attachment; filename="Launcher_RafaPanel.exe"',
-            'Content-Length': fs.statSync(filePath).size
-        });
-        return fs.createReadStream(filePath).pipe(res);
-    }
-
-    // 19. Download DLL by ID (Launcher download)
-    const downloadMatch = pathname.match(/^\/api\/download\/([a-zA-Z0-9_-]+)$/);
+    // 18. Universal Download Handler (Launcher .EXE & All 7 DLL Modules)
+    const downloadMatch = pathname.match(/^\/(?:api\/download|download)\/([a-zA-Z0-9_.-]+)$/i);
     if (downloadMatch && req.method === 'GET') {
-        const dllId = downloadMatch[1];
-        
-        // Safety check if requested launcher via ID
-        if (dllId.toLowerCase() === 'launcher') {
-            const filePath = path.join(UPLOADS_DIR, 'Launcher_RafaPanel.exe');
-            if (!fs.existsSync(filePath)) return sendJson(404, { error: 'Launcher_RafaPanel.exe no está subido aún' });
+        const queryTarget = downloadMatch[1].toLowerCase();
+
+        // 18.1 Launcher .EXE Request Check
+        const isLauncherTarget = [
+            'launcher', 'louncher', 'launcher_rafapanel', 'launcher_rafapanel.exe',
+            'exe', 'app', 'client', 'download'
+        ].includes(queryTarget);
+
+        if (isLauncherTarget || queryTarget.endsWith('.exe')) {
+            let filePath = path.join(UPLOADS_DIR, 'Launcher_RafaPanel.exe');
+            if (!fs.existsSync(filePath)) {
+                const candidates = [
+                    path.join(__dirname, '..', 'louncherexe', 'Launcher_RafaPanel.exe'),
+                    path.join(__dirname, '..', 'Louncher RF', 'Launcher_RafaPanel.exe'),
+                    path.join(__dirname, '..', 'Louncher RF', 'x64', 'x64', 'Release', 'example.exe')
+                ];
+                for (const c of candidates) {
+                    if (fs.existsSync(c)) {
+                        fs.copyFileSync(c, filePath);
+                        break;
+                    }
+                }
+            }
+
+            if (!fs.existsSync(filePath)) {
+                return sendJson(404, { error: 'Launcher_RafaPanel.exe no disponible' });
+            }
 
             const config = getConfig();
             config.stats.launcherDownloads = (config.stats.launcherDownloads || 0) + 1;
             saveConfig(config);
 
+            const fileStat = fs.statSync(filePath);
             res.writeHead(200, {
                 'Content-Type': 'application/octet-stream',
                 'Content-Disposition': 'attachment; filename="Launcher_RafaPanel.exe"',
-                'Content-Length': fs.statSync(filePath).size
+                'Content-Length': fileStat.size
             });
             return fs.createReadStream(filePath).pipe(res);
         }
 
+        // 18.2 DLL Module Request Check (Matches ID or Filename, e.g. edkide or edkide.dll)
         const config = getConfig();
-        const targetDll = config.dlls.find(d => d.id === dllId);
-        if (!targetDll) return sendJson(404, { error: 'Módulo no encontrado' });
+        const cleanName = queryTarget.replace(/\.dll$/i, '');
+        let targetDll = (config.dlls || []).find(d => 
+            d.id.toLowerCase() === queryTarget || 
+            d.id.toLowerCase() === cleanName ||
+            d.filename.toLowerCase() === queryTarget || 
+            d.filename.toLowerCase() === `${cleanName}.dll`
+        );
 
-        const filePath = path.join(UPLOADS_DIR, targetDll.filename);
-        if (!fs.existsSync(filePath)) return sendJson(404, { error: `Archivo ${targetDll.filename} no disponible` });
+        let dllFilename = targetDll ? targetDll.filename : (queryTarget.endsWith('.dll') ? queryTarget : `${queryTarget}.dll`);
+        let dllPath = path.join(UPLOADS_DIR, dllFilename);
+
+        if (!fs.existsSync(dllPath)) {
+            const candidates = [
+                path.join(__dirname, '..', 'DLL DEL PANEL ACTU', dllFilename),
+                path.join(__dirname, '..', 'Traceless', 'Build', dllFilename),
+                path.join(__dirname, '..', 'Louncher RF', dllFilename)
+            ];
+            for (const c of candidates) {
+                if (fs.existsSync(c)) {
+                    fs.copyFileSync(c, dllPath);
+                    break;
+                }
+            }
+        }
+
+        if (!fs.existsSync(dllPath)) {
+            return sendJson(404, { error: `Módulo ${dllFilename} no encontrado` });
+        }
 
         config.stats.dllDownloads = (config.stats.dllDownloads || 0) + 1;
         saveConfig(config);
 
+        const fileStat = fs.statSync(dllPath);
         res.writeHead(200, {
             'Content-Type': 'application/octet-stream',
-            'Content-Disposition': `attachment; filename="${targetDll.filename}"`,
-            'Content-Length': fs.statSync(filePath).size
+            'Content-Disposition': `attachment; filename="${dllFilename}"`,
+            'Content-Length': fileStat.size
         });
-        return fs.createReadStream(filePath).pipe(res);
+        return fs.createReadStream(dllPath).pipe(res);
     }
 
     // --- STATIC FILES SERVING & SENSITIVE FILE SHIELD (PUBLIC DIR ONLY) ---
