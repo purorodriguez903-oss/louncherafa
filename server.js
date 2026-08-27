@@ -28,14 +28,30 @@ function getConfig() {
             const data = fs.readFileSync(CONFIG_FILE, 'utf8');
             const parsed = JSON.parse(data);
             if (!parsed.keys) parsed.keys = [];
+            if (!parsed.authUsers) parsed.authUsers = [];
+            if (!parsed.authKeys) parsed.authKeys = [];
             if (!parsed.killSwitch) parsed.killSwitch = { active: false, reason: "Juego en mantenimiento." };
             if (!parsed.discord) parsed.discord = { enabled: false, webhookUrl: "" };
+            if (!parsed.freeMode) parsed.freeMode = {
+                active: false,
+                defaultTier: "Supreme",
+                universalUser: "FREE",
+                universalPass: "FREE",
+                allowAll: false
+            };
+            if (!parsed.broadcast) parsed.broadcast = {
+                active: false,
+                title: "AVISO VIP",
+                message: "Servidores 100% activos y sincronizados.",
+                type: "notice",
+                updatedAt: new Date().toISOString()
+            };
             return parsed;
         }
     } catch (e) {
         console.error('Error reading config.json:', e);
     }
-    return { keys: [], killSwitch: { active: false }, discord: { enabled: false } };
+    return { keys: [], authUsers: [], authKeys: [], killSwitch: { active: false }, discord: { enabled: false }, freeMode: { active: false, defaultTier: "Supreme" }, broadcast: { active: false } };
 }
 
 function saveConfig(config) {
@@ -884,6 +900,534 @@ const server = http.createServer((req, res) => {
         });
     }
 
+    // ========================================================
+    // RAFA AUTH MULTI-TIER SYSTEM (SUPREME & BASIC) API ROUTES
+    // ========================================================
+
+    // Auth 1. Get All Auth Data for /auth Dashboard (Admin Protected)
+    if (pathname === '/api/auth/data' && req.method === 'GET') {
+        if (!checkAdminAuth()) return sendJson(401, { error: 'No autorizado' });
+        cleanupHousekeeping();
+        const config = getConfig();
+        const now = Date.now();
+
+        const formattedUsers = (config.authUsers || []).map(u => {
+            let status = u.status || 'active';
+            if (u.expiresAt && new Date(u.expiresAt).getTime() < now) status = 'expired';
+            return {
+                ...u,
+                status,
+                remaining: getRemainingTimeString(u.expiresAt)
+            };
+        });
+
+        const formattedKeys = (config.authKeys || []).map(k => {
+            let status = k.status || 'active';
+            if (k.expiresAt && new Date(k.expiresAt).getTime() < now) status = 'expired';
+            return {
+                ...k,
+                status,
+                remaining: getRemainingTimeString(k.expiresAt)
+            };
+        });
+
+        return sendJson(200, {
+            success: true,
+            users: formattedUsers,
+            keys: formattedKeys,
+            freeMode: config.freeMode || { active: false, defaultTier: "Supreme" },
+            broadcast: config.broadcast || { active: false },
+            activeSessions: Array.from(activeSessions.values())
+        });
+    }
+
+    // Auth 2. Create User (Username + Password + Subscription + Duration)
+    if (pathname === '/api/auth/user/create' && req.method === 'POST') {
+        return readBody((err, data) => {
+            if (!checkAdminAuth(data.password)) return sendJson(401, { error: 'No autorizado' });
+            const config = getConfig();
+            const { username, password, subscription = 'Supreme', duration = '30d', customDays, label } = data;
+
+            if (!username || !password) {
+                return sendJson(400, { error: 'Nombre de usuario y contraseña son requeridos' });
+            }
+
+            const cleanUser = username.trim();
+            if (config.authUsers.some(u => u.username.toLowerCase() === cleanUser.toLowerCase())) {
+                return sendJson(400, { error: `El usuario '${cleanUser}' ya existe. Elige otro nombre.` });
+            }
+
+            let durationDays = 30;
+            let durLabel = "30 Días";
+            if (duration === '1d') { durationDays = 1; durLabel = "1 Día"; }
+            else if (duration === '7d') { durationDays = 7; durLabel = "7 Días"; }
+            else if (duration === '30d') { durationDays = 30; durLabel = "30 Días"; }
+            else if (duration === 'lifetime') { durationDays = -1; durLabel = "Permanente"; }
+            else if (duration === 'custom' && customDays) {
+                durationDays = parseInt(customDays) || 30;
+                durLabel = `${durationDays} Días`;
+            }
+
+            const now = Date.now();
+            const expiresAt = durationDays > 0 ? new Date(now + durationDays * 86400000).toISOString() : null;
+
+            const newUser = {
+                username: cleanUser,
+                password: password.trim(),
+                subscription: (subscription === 'Basico' || subscription === 'Basic') ? 'Basico' : 'Supreme',
+                duration: durLabel,
+                durationDays: durationDays,
+                label: label || "Cliente VIP",
+                createdAt: new Date().toISOString(),
+                expiresAt: expiresAt,
+                hwid: null,
+                lastIp: null,
+                status: 'active'
+            };
+
+            config.authUsers.unshift(newUser);
+            saveConfig(config);
+
+            sendDiscordEmbed({
+                title: "👤 Nueva Cuenta de Usuario Creada",
+                description: `Se ha registrado el usuario **${newUser.username}** en el portal AUTH.`,
+                color: newUser.subscription === 'Supreme' ? 0xFBBF24 : 0x00E5FF,
+                fields: [
+                    { name: "Usuario", value: `\`${newUser.username}\``, inline: true },
+                    { name: "Suscripción", value: `**${newUser.subscription}**`, inline: true },
+                    { name: "Duración", value: durLabel, inline: true }
+                ]
+            });
+
+            return sendJson(200, { success: true, user: newUser });
+        });
+    }
+
+    // Auth 3. Delete User
+    if (pathname === '/api/auth/user/delete' && req.method === 'POST') {
+        return readBody((err, data) => {
+            if (!checkAdminAuth(data.password)) return sendJson(401, { error: 'No autorizado' });
+            const config = getConfig();
+            const targetUser = data.username;
+            config.authUsers = config.authUsers.filter(u => u.username !== targetUser);
+            saveConfig(config);
+            return sendJson(200, { success: true, message: `Usuario ${targetUser} eliminado` });
+        });
+    }
+
+    // Auth 4. Reset User HWID
+    if (pathname === '/api/auth/user/reset-hwid' && req.method === 'POST') {
+        return readBody((err, data) => {
+            if (!checkAdminAuth(data.password)) return sendJson(401, { error: 'No autorizado' });
+            const config = getConfig();
+            const target = config.authUsers.find(u => u.username === data.username);
+            if (!target) return sendJson(404, { error: 'Usuario no encontrado' });
+
+            target.hwid = null;
+            saveConfig(config);
+            return sendJson(200, { success: true, message: 'HWID reseteado con éxito' });
+        });
+    }
+
+    // Auth 5. Renew User Duration
+    if (pathname === '/api/auth/user/renew' && req.method === 'POST') {
+        return readBody((err, data) => {
+            if (!checkAdminAuth(data.password)) return sendJson(401, { error: 'No autorizado' });
+            const config = getConfig();
+            const target = config.authUsers.find(u => u.username === data.username);
+            if (!target) return sendJson(404, { error: 'Usuario no encontrado' });
+
+            const addDays = parseInt(data.days) || 30;
+            const now = Date.now();
+            let baseTime = now;
+            if (target.expiresAt && new Date(target.expiresAt).getTime() > now) {
+                baseTime = new Date(target.expiresAt).getTime();
+            }
+            target.expiresAt = new Date(baseTime + addDays * 86400000).toISOString();
+            target.status = 'active';
+            saveConfig(config);
+
+            return sendJson(200, { success: true, remaining: getRemainingTimeString(target.expiresAt) });
+        });
+    }
+
+    // Auth 6. Change User Tier (Supreme <-> Basico)
+    if (pathname === '/api/auth/user/change-tier' && req.method === 'POST') {
+        return readBody((err, data) => {
+            if (!checkAdminAuth(data.password)) return sendJson(401, { error: 'No autorizado' });
+            const config = getConfig();
+            const target = config.authUsers.find(u => u.username === data.username);
+            if (!target) return sendJson(404, { error: 'Usuario no encontrado' });
+
+            target.subscription = data.subscription === 'Supreme' ? 'Supreme' : 'Basico';
+            saveConfig(config);
+            return sendJson(200, { success: true, subscription: target.subscription });
+        });
+    }
+
+    // Auth 7. Generate Keys (Keys with Supreme/Basic Tier)
+    if (pathname === '/api/auth/key/generate' && req.method === 'POST') {
+        return readBody((err, data) => {
+            if (!checkAdminAuth(data.password)) return sendJson(401, { error: 'No autorizado' });
+            const config = getConfig();
+            const { subscription = 'Supreme', duration = '30d', customDays, count = 1, label = "Cliente VIP" } = data;
+
+            let durationDays = 30;
+            let durLabel = "30 Días";
+            if (duration === '1d') { durationDays = 1; durLabel = "1 Día"; }
+            else if (duration === '7d') { durationDays = 7; durLabel = "7 Días"; }
+            else if (duration === '30d') { durationDays = 30; durLabel = "30 Días"; }
+            else if (duration === 'lifetime') { durationDays = -1; durLabel = "Permanente"; }
+            else if (duration === 'custom' && customDays) {
+                durationDays = parseInt(customDays) || 30;
+                durLabel = `${durationDays} Días`;
+            }
+
+            const prefix = subscription === 'Supreme' ? 'SUPREME' : 'BASIC';
+            const numToCreate = Math.min(Math.max(parseInt(count) || 1, 1), 50);
+            const createdKeys = [];
+
+            for (let i = 0; i < numToCreate; i++) {
+                const newKey = {
+                    key: generateRandomKey(prefix),
+                    subscription: subscription === 'Supreme' ? 'Supreme' : 'Basico',
+                    duration: durLabel,
+                    durationDays: durationDays,
+                    label: numToCreate === 1 ? label : `${label} #${i + 1}`,
+                    createdAt: new Date().toISOString(),
+                    expiresAt: null,
+                    hwid: null,
+                    usedAt: null,
+                    status: 'active'
+                };
+                config.authKeys.unshift(newKey);
+                config.keys.unshift(newKey);
+                createdKeys.push(newKey);
+            }
+
+            saveConfig(config);
+
+            sendDiscordEmbed({
+                title: "💎 Nuevas Licencias Directas Generadas",
+                description: `Se han creado **${createdKeys.length}** clave(s) de nivel **${subscription}** (${durLabel}).`,
+                color: subscription === 'Supreme' ? 0xFBBF24 : 0x00E5FF,
+                fields: createdKeys.slice(0, 5).map(k => ({ name: k.label, value: `\`${k.key}\``, inline: true }))
+            });
+
+            return sendJson(200, { success: true, created: createdKeys });
+        });
+    }
+
+    // Auth 8. Delete / Reset HWID / Renew Key for /auth
+    if (pathname === '/api/auth/key/delete' && req.method === 'POST') {
+        return readBody((err, data) => {
+            if (!checkAdminAuth(data.password)) return sendJson(401, { error: 'No autorizado' });
+            const config = getConfig();
+            config.authKeys = (config.authKeys || []).filter(k => k.key !== data.key);
+            config.keys = (config.keys || []).filter(k => k.key !== data.key);
+            saveConfig(config);
+            return sendJson(200, { success: true, message: 'Clave eliminada' });
+        });
+    }
+
+    if (pathname === '/api/auth/key/reset-hwid' && req.method === 'POST') {
+        return readBody((err, data) => {
+            if (!checkAdminAuth(data.password)) return sendJson(401, { error: 'No autorizado' });
+            const config = getConfig();
+            const target = (config.authKeys || []).find(k => k.key === data.key) || (config.keys || []).find(k => k.key === data.key);
+            if (!target) return sendJson(404, { error: 'Clave no encontrada' });
+            target.hwid = null;
+            saveConfig(config);
+            return sendJson(200, { success: true, message: 'HWID reseteado' });
+        });
+    }
+
+    if (pathname === '/api/auth/key/renew' && req.method === 'POST') {
+        return readBody((err, data) => {
+            if (!checkAdminAuth(data.password)) return sendJson(401, { error: 'No autorizado' });
+            const config = getConfig();
+            const target = (config.authKeys || []).find(k => k.key === data.key) || (config.keys || []).find(k => k.key === data.key);
+            if (!target) return sendJson(404, { error: 'Clave no encontrada' });
+            const addDays = parseInt(data.days) || 30;
+            const now = Date.now();
+            let baseTime = now;
+            if (target.expiresAt && new Date(target.expiresAt).getTime() > now) {
+                baseTime = new Date(target.expiresAt).getTime();
+            }
+            target.expiresAt = new Date(baseTime + addDays * 86400000).toISOString();
+            target.status = 'active';
+            saveConfig(config);
+            return sendJson(200, { success: true, remaining: getRemainingTimeString(target.expiresAt) });
+        });
+    }
+
+    // Auth 9. Toggle Free Mode
+    if (pathname === '/api/auth/freemode/toggle' && req.method === 'POST') {
+        return readBody((err, data) => {
+            if (!checkAdminAuth(data.password)) return sendJson(401, { error: 'No autorizado' });
+            const config = getConfig();
+            const active = !!data.active;
+            const defaultTier = data.defaultTier === 'Supreme' ? 'Supreme' : 'Basico';
+            const universalUser = (data.universalUser || 'FREE').trim();
+            const universalPass = (data.universalPass || 'FREE').trim();
+
+            config.freeMode = {
+                active,
+                defaultTier,
+                universalUser,
+                universalPass,
+                allowAll: active
+            };
+            config.security.allowFreeAccess = active;
+            saveConfig(config);
+
+            sendDiscordEmbed({
+                title: active ? "🔓 MODO PANEL GRATIS ACTIVADO" : "🔒 MODO PANEL GRATIS DESACTIVADO",
+                description: active 
+                    ? `El panel ahora está abierto gratis para todas las PCs con suscripción **${defaultTier}**.\nUsuario: \`${universalUser}\` | Contraseña: \`${universalPass}\``
+                    : `El acceso gratuito ha sido cerrado. Se requiere cuenta registrada o licencia VIP.`,
+                color: active ? 0x10B981 : 0xEF4444
+            });
+
+            return sendJson(200, { success: true, freeMode: config.freeMode });
+        });
+    }
+
+    // Auth 10. Broadcast Real-Time Message to Panel
+    if (pathname === '/api/auth/broadcast/send' && req.method === 'POST') {
+        return readBody((err, data) => {
+            if (!checkAdminAuth(data.password)) return sendJson(401, { error: 'No autorizado' });
+            const config = getConfig();
+            const { type = 'notice', title = 'AVISO VIP', message = '', active = true } = data;
+
+            config.broadcast = {
+                type,
+                title,
+                message,
+                active: !!active,
+                updatedAt: new Date().toISOString()
+            };
+            if (config.status) {
+                config.status.broadcastAlert = message;
+                config.status.showAlert = !!active;
+            }
+            saveConfig(config);
+
+            sendDiscordEmbed({
+                title: `📢 Transmisión en Tiempo Real: ${title}`,
+                description: message,
+                color: type === 'maintenance' ? 0xEF4444 : (type === 'supreme' ? 0xFBBF24 : 0x00E5FF)
+            });
+
+            return sendJson(200, { success: true, broadcast: config.broadcast });
+        });
+    }
+
+    // Auth 11. Client-Facing Universal Login (Supports Username+Password, Keys, Free Mode, Subscriptions)
+    if ((pathname === '/api/auth/client/login' || pathname === '/api/client/login' || pathname === '/api/v1/auth') && req.method === 'POST') {
+        return readBody((err, data) => {
+            const config = getConfig();
+            const { username, password, key, hwid, emulator } = data;
+            const now = Date.now();
+
+            // 1. Check Global Kill Switch
+            if (config.killSwitch && config.killSwitch.active) {
+                return sendJson(200, {
+                    success: false,
+                    freeze: true,
+                    message: `PAUSA POR SEGURIDAD: ${config.killSwitch.reason}`
+                });
+            }
+
+            // 2. Check Global Free Mode
+            if (config.freeMode && config.freeMode.active) {
+                const freeTier = config.freeMode.defaultTier || "Supreme";
+                if (hwid) {
+                    activeSessions.set(hwid, {
+                        hwid,
+                        username: username || "Usuario Gratis",
+                        subscription: freeTier,
+                        emulator: emulator || "PC / Emulador",
+                        ip: clientIp,
+                        lastSeen: now
+                    });
+                }
+                return sendJson(200, {
+                    success: true,
+                    freeMode: true,
+                    user: username || config.freeMode.universalUser || "FREE",
+                    subscription: freeTier,
+                    remaining: "Ilimitado (Modo Gratis)",
+                    expiresAt: null,
+                    broadcast: config.broadcast || {},
+                    message: `¡Bienvenido! Acceso Gratuito Autorizado (${freeTier})`
+                });
+            }
+
+            // 3. Check Username + Password Login
+            if (username && password) {
+                const cleanUser = username.trim().toLowerCase();
+                const cleanPass = password.trim();
+
+                if (config.freeMode && cleanUser === (config.freeMode.universalUser || 'FREE').toLowerCase() && cleanPass === (config.freeMode.universalPass || 'FREE')) {
+                    const freeTier = config.freeMode.defaultTier || "Supreme";
+                    if (hwid) {
+                        activeSessions.set(hwid, { hwid, username: cleanUser, subscription: freeTier, emulator: emulator || "Emulador", ip: clientIp, lastSeen: now });
+                    }
+                    return sendJson(200, {
+                        success: true,
+                        user: cleanUser,
+                        subscription: freeTier,
+                        remaining: "Ilimitado",
+                        broadcast: config.broadcast || {},
+                        message: `Sesión Universal Autorizada (${freeTier})`
+                    });
+                }
+
+                const userObj = (config.authUsers || []).find(u => u.username.toLowerCase() === cleanUser && u.password === cleanPass);
+                if (userObj) {
+                    if (!userObj.hwid || userObj.hwid === "HWID-PENDING") {
+                        userObj.hwid = hwid || "HWID-OK";
+                        userObj.lastIp = clientIp;
+                        saveConfig(config);
+                    } else if (hwid && userObj.hwid !== hwid) {
+                        return sendJson(200, {
+                            success: false,
+                            error: "HWID_MISMATCH",
+                            message: "Esta cuenta está vinculada a otra PC. Solicita un reset de HWID al administrador."
+                        });
+                    }
+
+                    if (userObj.expiresAt) {
+                        const expTime = new Date(userObj.expiresAt).getTime();
+                        if (now > expTime) {
+                            userObj.status = 'expired';
+                            saveConfig(config);
+                            return sendJson(200, { success: false, message: "Tu suscripción ha expirado. Contacta al administrador." });
+                        }
+                    }
+
+                    if (hwid) {
+                        activeSessions.set(hwid, {
+                            hwid,
+                            username: userObj.username,
+                            subscription: userObj.subscription || "Supreme",
+                            emulator: emulator || "Emulador",
+                            ip: clientIp,
+                            lastSeen: now
+                        });
+                    }
+
+                    return sendJson(200, {
+                        success: true,
+                        user: userObj.username,
+                        subscription: userObj.subscription || "Supreme",
+                        expiresAt: userObj.expiresAt,
+                        remaining: getRemainingTimeString(userObj.expiresAt),
+                        broadcast: config.broadcast || {},
+                        message: `Bienvenido ${userObj.username} (${userObj.subscription})`
+                    });
+                }
+            }
+
+            // 4. Check License Key Login
+            const keyToCheck = key || username;
+            if (keyToCheck) {
+                const cleanKey = keyToCheck.trim().toUpperCase();
+                const keyObj = (config.authKeys || []).find(k => k.key.toUpperCase() === cleanKey) ||
+                               (config.keys || []).find(k => k.key.toUpperCase() === cleanKey) ||
+                               (cleanKey === (config.security.accessKey || 'RAFAPANEL').toUpperCase() ? { key: cleanKey, subscription: 'Supreme', label: 'Master Key' } : null);
+
+                if (keyObj) {
+                    if (!keyObj.hwid || keyObj.hwid === "HWID-PENDING") {
+                        keyObj.hwid = hwid || "HWID-OK";
+                        keyObj.lastIp = clientIp;
+                        if (!keyObj.usedAt) {
+                            keyObj.usedAt = new Date().toISOString();
+                            if (keyObj.durationDays && keyObj.durationDays > 0) {
+                                keyObj.expiresAt = new Date(now + keyObj.durationDays * 86400000).toISOString();
+                            }
+                        }
+                        saveConfig(config);
+                    } else if (hwid && keyObj.hwid !== hwid) {
+                        return sendJson(200, {
+                            success: false,
+                            error: "HWID_MISMATCH",
+                            message: "Esta clave está vinculada a otra PC. Solicita un reset de HWID al administrador."
+                        });
+                    }
+
+                    if (keyObj.expiresAt) {
+                        const expTime = new Date(keyObj.expiresAt).getTime();
+                        if (now > expTime) {
+                            keyObj.status = 'expired';
+                            saveConfig(config);
+                            return sendJson(200, { success: false, message: "Tu clave ha expirado." });
+                        }
+                    }
+
+                    if (hwid) {
+                        activeSessions.set(hwid, {
+                            hwid,
+                            username: keyObj.label || keyObj.key,
+                            subscription: keyObj.subscription || "Supreme",
+                            emulator: emulator || "Emulador",
+                            ip: clientIp,
+                            lastSeen: now
+                        });
+                    }
+
+                    return sendJson(200, {
+                        success: true,
+                        key: keyObj.key,
+                        subscription: keyObj.subscription || "Supreme",
+                        expiresAt: keyObj.expiresAt,
+                        remaining: getRemainingTimeString(keyObj.expiresAt),
+                        broadcast: config.broadcast || {},
+                        message: `Licencia VIP Autorizada (${keyObj.subscription || "Supreme"})`
+                    });
+                }
+            }
+
+            return sendJson(200, {
+                success: false,
+                message: "Usuario, contraseña o licencia no válidos. Verifica tus datos."
+            });
+        });
+    }
+
+    // Auth 12. Client-Facing Heartbeat & Broadcast Sync
+    if ((pathname === '/api/auth/client/heartbeat' || pathname === '/api/client/heartbeat') && req.method === 'POST') {
+        return readBody((err, data) => {
+            const config = getConfig();
+            const { hwid, username, emulator, subscription } = data;
+            const now = Date.now();
+
+            if (hwid) {
+                activeSessions.set(hwid, {
+                    hwid,
+                    username: username || "Cliente",
+                    subscription: subscription || (config.freeMode && config.freeMode.active ? config.freeMode.defaultTier : "Supreme"),
+                    emulator: emulator || "Emulador",
+                    ip: clientIp,
+                    lastSeen: now
+                });
+            }
+
+            cleanupHousekeeping();
+
+            return sendJson(200, {
+                ok: true,
+                freeze: config.killSwitch ? config.killSwitch.active : false,
+                freezeReason: config.killSwitch ? config.killSwitch.reason : "",
+                freeMode: config.freeMode ? config.freeMode.active : false,
+                freeModeTier: config.freeMode ? config.freeMode.defaultTier : "Supreme",
+                broadcast: config.broadcast || { active: false },
+                activeUsers: activeSessions.size
+            });
+        });
+    }
+
     // 15. Update General Config (Admin Protected)
     if (pathname === '/api/config/update' && req.method === 'POST') {
         return readBody((err, data) => {
@@ -1056,6 +1600,9 @@ const server = http.createServer((req, res) => {
     let reqPath = pathname === '/' ? '/index.html' : pathname;
     if (pathname === '/admin' || pathname === '/admin/') {
         reqPath = '/admin.html';
+    }
+    if (pathname === '/auth' || pathname === '/auth/') {
+        reqPath = '/auth.html';
     }
     const safePath = path.normalize(path.join(PUBLIC_DIR, reqPath));
 
