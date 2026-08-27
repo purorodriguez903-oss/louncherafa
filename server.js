@@ -163,13 +163,26 @@ function refreshDllMetadata() {
     const launcherPath = path.join(UPLOADS_DIR, 'Launcher_RafaPanel.exe');
     if (fs.existsSync(launcherPath)) {
         const stats = fs.statSync(launcherPath);
+        const existingCount = (config.launcher && config.launcher.updateCount) || 1;
         config.launcher = {
             filename: 'Launcher_RafaPanel.exe',
             size: formatBytes(stats.size),
             checksum: getFileChecksum(launcherPath),
             updatedAt: stats.mtime.toISOString(),
+            updateCount: existingCount,
             exists: true
         };
+        if (!config.launcherLogs) {
+            config.launcherLogs = [{
+                id: 'upd_init',
+                timestamp: stats.mtime.toISOString(),
+                filename: 'Launcher_RafaPanel.exe',
+                size: formatBytes(stats.size),
+                checksum: getFileChecksum(launcherPath),
+                ip: '127.0.0.1 (Local)',
+                status: 'Compilación Inicial'
+            }];
+        }
     }
 
     saveConfig(config);
@@ -515,7 +528,8 @@ const server = http.createServer((req, res) => {
                 activeUsers: activeSessions.size
             },
             dlls: config.dlls,
-            launcher: config.launcher
+            launcher: config.launcher,
+            launcherLogs: config.launcherLogs || []
         });
     }
 
@@ -1692,20 +1706,38 @@ const server = http.createServer((req, res) => {
 
             const stats = fs.statSync(destPath);
             const config = getConfig();
+            const newCount = ((config.launcher && config.launcher.updateCount) || 0) + 1;
+            const logEntry = {
+                id: 'upd_' + Date.now(),
+                timestamp: stats.mtime.toISOString(),
+                filename: 'Launcher_RafaPanel.exe',
+                size: formatBytes(stats.size),
+                checksum: getFileChecksum(destPath),
+                ip: clientIp || '127.0.0.1',
+                status: 'Actualización Exitosa'
+            };
+
             config.launcher = {
                 filename: 'Launcher_RafaPanel.exe',
                 size: formatBytes(stats.size),
                 checksum: getFileChecksum(destPath),
                 updatedAt: stats.mtime.toISOString(),
+                updateCount: newCount,
                 exists: true
             };
+
+            if (!config.launcherLogs) config.launcherLogs = [];
+            config.launcherLogs.unshift(logEntry);
+            if (config.launcherLogs.length > 60) config.launcherLogs.pop();
+
             saveConfig(config);
 
             sendDiscordEmbed({
-                title: "🚀 Launcher .EXE Actualizado",
+                title: `🚀 Launcher .EXE Actualizado (#${newCount})`,
                 description: `Se ha subido una nueva versión de **Launcher_RafaPanel.exe** a la nube.`,
                 color: 0x10B981,
                 fields: [
+                    { name: "Versión / Build", value: `#${newCount}`, inline: true },
                     { name: "Tamaño", value: config.launcher.size, inline: true },
                     { name: "SHA-256", value: `\`${config.launcher.checksum.slice(0, 16)}...\``, inline: true }
                 ]
@@ -1713,9 +1745,21 @@ const server = http.createServer((req, res) => {
 
             return sendJson(200, {
                 success: true,
-                message: 'Launcher_RafaPanel.exe subido exitosamente a la nube',
-                launcher: config.launcher
+                message: `Launcher_RafaPanel.exe subido exitosamente (Actualización #${newCount})`,
+                launcher: config.launcher,
+                launcherLogs: config.launcherLogs
             });
+        });
+    }
+
+    // 17.1 Clear Launcher Logs (Admin Protected)
+    if (pathname === '/api/launcher/logs/clear' && req.method === 'POST') {
+        return readBody((err, data) => {
+            if (!checkAdminAuth(data.password)) return sendJson(401, { error: 'No autorizado' });
+            const config = getConfig();
+            config.launcherLogs = [];
+            saveConfig(config);
+            return sendJson(200, { success: true, message: 'Historial de logs limpiado.' });
         });
     }
 

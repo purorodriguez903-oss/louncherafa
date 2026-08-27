@@ -279,11 +279,12 @@ async function loadAllAdminData() {
         // Populate DLLs table
         renderDllsTable(currentConfig.dlls);
 
-        // Populate Launcher info
+        // Populate Launcher info & update logs
         if (currentConfig.launcher) {
             document.getElementById('adminLauncherFilename').innerText = currentConfig.launcher.filename;
             document.getElementById('adminLauncherMeta').innerText = `Tamaño: ${currentConfig.launcher.size || '--'} • Actualizado: ${new Date(currentConfig.launcher.updatedAt || Date.now()).toLocaleDateString()}`;
         }
+        renderLauncherLogs(currentConfig.launcherLogs, currentConfig.launcher);
 
         loadLiveStats();
         loadKeysTable();
@@ -920,6 +921,76 @@ async function handleLauncherUpload(e) {
         }
     } catch (e) {
         showToast("Error de conexión", false);
+    }
+}
+
+// Render Launcher Logs & Updates Counter
+function renderLauncherLogs(logs, launcherData) {
+    const listEl = document.getElementById('launcherLogsList');
+    const totalEl = document.getElementById('adminLauncherTotalUpdates');
+    const buildEl = document.getElementById('launcherLastBuildLabel');
+    if (!listEl) return;
+
+    const count = (launcherData && launcherData.updateCount) || (logs ? logs.length : 0);
+    if (totalEl) totalEl.innerText = count;
+    if (buildEl) buildEl.innerText = `Build: #${count || 1} • Activo 24/7`;
+
+    if (!logs || logs.length === 0) {
+        listEl.innerHTML = `
+            <div style="text-align: center; color: var(--text-dim); padding: 2rem 1rem; font-size: 0.85rem;">
+                No hay registros de actualizaciones aún.
+            </div>
+        `;
+        return;
+    }
+
+    listEl.innerHTML = logs.map((log) => {
+        const dateStr = log.timestamp ? new Date(log.timestamp).toLocaleString() : '--';
+        const checksumShort = log.checksum ? log.checksum.substring(0, 10) + '...' : '--';
+        return `
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 8px; padding: 0.65rem 0.85rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;">
+                <div style="display: flex; align-items: center; gap: 0.65rem; min-width: 0;">
+                    <div style="width: 28px; height: 28px; border-radius: 6px; background: rgba(0, 229, 255, 0.15); color: var(--primary); display: grid; place-items: center; font-size: 0.85rem; flex-shrink: 0;">
+                        🚀
+                    </div>
+                    <div style="min-width: 0;">
+                        <div style="font-size: 0.85rem; font-weight: 700; color: #f1f5f9; display: flex; align-items: center; gap: 0.4rem;">
+                            <span>${log.filename || 'Launcher_RafaPanel.exe'}</span>
+                            <span style="font-size: 0.7rem; padding: 0.1rem 0.35rem; background: rgba(16, 185, 129, 0.2); color: var(--success); border-radius: 4px;">${log.size || '--'}</span>
+                        </div>
+                        <div style="font-size: 0.75rem; color: var(--text-dim); font-family: var(--font-mono); margin-top: 0.15rem;">
+                            ${dateStr} • SHA: ${checksumShort}
+                        </div>
+                    </div>
+                </div>
+                <div style="text-align: right; flex-shrink: 0;">
+                    <span style="font-size: 0.7rem; color: var(--success); font-weight: 700; background: rgba(0, 255, 170, 0.1); border: 1px solid rgba(0, 255, 170, 0.25); padding: 0.2rem 0.5rem; border-radius: 4px;">
+                        ● ONLINE
+                    </span>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Clear Launcher Logs Handler
+async function clearLauncherLogs() {
+    if (!confirm('¿Estás seguro de que deseas limpiar el historial de logs del Launcher?')) return;
+    try {
+        const res = await fetch('/api/launcher/logs/clear', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({})
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast('Historial de logs limpiado.');
+            loadAllAdminData();
+        } else {
+            showToast(data.error || 'Error al limpiar', false);
+        }
+    } catch (e) {
+        showToast('Error de conexión', false);
     }
 }
 

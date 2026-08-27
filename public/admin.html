@@ -378,26 +378,58 @@
           <div class="section-title">
             <div>
               <h3>Actualizador del Ejecutable (Launcher_RafaPanel.exe)</h3>
-              <p style="color: var(--text-muted); font-size: 0.9rem;">Sube la versión más reciente del Launcher compilado en C++ DirectX 11.</p>
+              <p style="color: var(--text-muted); font-size: 0.9rem;">Sube la versión más reciente del Launcher compilado en C++ DirectX 11 y monitorea el historial de versiones.</p>
             </div>
           </div>
 
-          <div class="glass-panel" style="margin-top: 1.5rem; padding: 2rem; max-width: 600px;">
-            <div style="display: flex; align-items: center; gap: 1.5rem; margin-bottom: 1.5rem;">
-              <div class="brand-logo" style="width: 60px; height: 60px; font-size: 2rem;">🚀</div>
-              <div>
-                <h4 id="adminLauncherFilename" style="font-size: 1.15rem; color: var(--primary);">Launcher_RafaPanel.exe</h4>
-                <p id="adminLauncherMeta" style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.2rem;">Tamaño: -- • Actualizado: --</p>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+            <!-- Column 1: Upload Card -->
+            <div class="glass-panel" style="padding: 2rem;">
+              <div style="display: flex; align-items: center; gap: 1.25rem; margin-bottom: 1.5rem;">
+                <div class="brand-logo" style="width: 54px; height: 54px; font-size: 1.75rem;">🚀</div>
+                <div>
+                  <h4 id="adminLauncherFilename" style="font-size: 1.15rem; color: var(--primary);">Launcher_RafaPanel.exe</h4>
+                  <p id="adminLauncherMeta" style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.2rem;">Tamaño: -- • Actualizado: --</p>
+                </div>
               </div>
+
+              <form id="launcherUploadForm" onsubmit="handleLauncherUpload(event)">
+                <div class="form-group">
+                  <label>Selecciona el nuevo archivo .EXE:</label>
+                  <input type="file" id="launcherFileInput" class="form-control" accept=".exe" required>
+                </div>
+                <button type="submit" class="btn-submit" id="btnUploadLauncherSubmit">Subir Nuevo Launcher a la Nube ➔</button>
+              </form>
             </div>
 
-            <form id="launcherUploadForm" onsubmit="handleLauncherUpload(event)">
-              <div class="form-group">
-                <label>Selecciona el nuevo archivo .EXE:</label>
-                <input type="file" id="launcherFileInput" class="form-control" accept=".exe" required>
+            <!-- Column 2: Launcher Update Logs & History -->
+            <div class="glass-panel" style="padding: 1.75rem; display: flex; flex-direction: column;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+                <div>
+                  <h4 style="font-size: 1.05rem; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>📜</span> Historial & Logs del Launcher
+                  </h4>
+                  <p style="color: var(--text-dim); font-size: 0.8rem; margin-top: 0.15rem;">Registro de compilaciones y subidas a la nube</p>
+                </div>
+                <div style="text-align: right;">
+                  <span class="live-sync-indicator" style="background: rgba(168, 85, 247, 0.15); border-color: rgba(168, 85, 247, 0.4); color: var(--secondary);">
+                    Total: <strong id="adminLauncherTotalUpdates" style="margin-left: 4px; font-size: 0.85rem;">0</strong>
+                  </span>
+                </div>
               </div>
-              <button type="submit" class="btn-submit">Subir Nuevo Launcher a la Nube ➔</button>
-            </form>
+
+              <!-- Scrollable Logs Console -->
+              <div id="launcherLogsList" style="max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.6rem; padding-right: 4px;">
+                <div style="text-align: center; color: var(--text-dim); padding: 2rem 1rem; font-size: 0.85rem;">
+                  No hay registros de actualizaciones aún.
+                </div>
+              </div>
+
+              <div style="margin-top: auto; padding-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                <span id="launcherLastBuildLabel" style="font-size: 0.75rem; color: var(--text-dim);">Build: #1 • Activo 24/7</span>
+                <button type="button" onclick="clearLauncherLogs()" class="btn-text-action" style="font-size: 0.75rem; color: #ef4444;">🗑️ Limpiar Logs</button>
+              </div>
+            </div>
           </div>
         </section>
 
