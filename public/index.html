@@ -87,44 +87,28 @@
           </div>
           <h3 class="gen-title">Crear Cuenta VIP Instantánea</h3>
           <p class="gen-subtitle">
-            Genera tu propio usuario y contraseña para ingresar directamente al panel y launcher. Duración máxima permitida: <strong>14 días</strong>.
+            Genera tu propio usuario y contraseña para la suscripción <strong>Basic</strong>. Duración máxima permitida: <strong>14 días</strong>.
           </p>
         </div>
 
         <form id="publicRegisterForm" class="gen-form" onsubmit="handlePublicRegister(event)">
           <div class="form-row-2">
             <div class="form-group">
-              <label for="genUsername">👤 Nombre de Usuario:</label>
-              <input type="text" id="genUsername" placeholder="Ej: RafaPlayer77" minlength="3" maxlength="24" required autocomplete="off">
+              <label for="genUsername">👤 NOMBRE DE USUARIO:</label>
+              <input type="text" id="genUsername" placeholder="Ingresar un username" minlength="3" maxlength="24" required autocomplete="off">
             </div>
             <div class="form-group">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
-                <label for="genPassword" style="margin-bottom: 0;">🔑 Contraseña:</label>
+                <label for="genPassword" style="margin-bottom: 0;">🔑 CONTRASEÑA:</label>
                 <button type="button" class="btn-text-action" onclick="generateRandomPass()">🎲 Clave Aleatoria</button>
               </div>
-              <input type="text" id="genPassword" placeholder="Ej: ClaveSegura2026" minlength="3" maxlength="32" required autocomplete="off">
+              <input type="text" id="genPassword" placeholder="Ingresar una contrasena" minlength="3" maxlength="32" required autocomplete="off">
             </div>
           </div>
 
-          <div class="form-row-2" style="margin-top: 1.2rem;">
+          <div style="margin-top: 1.25rem;">
             <div class="form-group">
-              <label>👑 Suscripción Deseada:</label>
-              <div class="tier-selector">
-                <label class="tier-option active" id="tierSupremeLabel" onclick="setTier('Supreme')">
-                  <input type="radio" name="genTier" value="Supreme" checked>
-                  <span class="tier-name">⭐ Supreme</span>
-                  <span class="tier-desc">Acceso Completo VIP</span>
-                </label>
-                <label class="tier-option" id="tierBasicLabel" onclick="setTier('Basic')">
-                  <input type="radio" name="genTier" value="Basic">
-                  <span class="tier-name">🔹 Basic</span>
-                  <span class="tier-desc">Modos Estándar</span>
-                </label>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label>⏳ Días de Acceso (Máximo 14 Días):</label>
+              <label style="margin-bottom: 0.5rem;">⏳ DÍAS DE ACCESO (MÁXIMO 14 DÍAS):</label>
               <div class="days-selector">
                 <button type="button" class="day-btn" data-days="1" onclick="selectDays(1, this)">1 Día</button>
                 <button type="button" class="day-btn" data-days="3" onclick="selectDays(3, this)">3 Días</button>
@@ -149,7 +133,7 @@
             <div class="ticket-icon">✅</div>
             <div>
               <h4>¡Cuenta VIP Creada Exitosamente!</h4>
-              <p>Tu cuenta ya está activa en la base de datos de RAFA SAFE.</p>
+              <p>Tu cuenta Basic ya está activa en la base de datos de RAFA SAFE.</p>
             </div>
           </div>
           <div class="ticket-body">
@@ -163,7 +147,7 @@
             </div>
             <div class="ticket-row">
               <span class="t-label">Suscripción:</span>
-              <span class="t-val badge-supreme" id="resTier">Supreme</span>
+              <span class="t-val badge-basic" id="resTier">Basic</span>
             </div>
             <div class="ticket-row">
               <span class="t-label">Duración:</span>
@@ -284,14 +268,8 @@
 
   <script src="particles.js"></script>
   <script>
-    let selectedTier = 'Supreme';
+    let selectedTier = 'Basic';
     let lastCreatedCreds = null;
-
-    function setTier(tier) {
-      selectedTier = tier;
-      document.getElementById('tierSupremeLabel').classList.toggle('active', tier === 'Supreme');
-      document.getElementById('tierBasicLabel').classList.toggle('active', tier === 'Basic');
-    }
 
     function selectDays(days, btn) {
       document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));

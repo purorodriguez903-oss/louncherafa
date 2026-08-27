@@ -974,12 +974,12 @@ const server = http.createServer((req, res) => {
                 return sendJson(400, { success: false, message: "El usuario y la contraseña deben tener al menos 3 caracteres." });
             }
 
-            // Strictly enforce maximum 14 days
+            // Strictly enforce maximum 14 days and Basic subscription for public registrations
             let durationDays = parseInt(days) || 1;
             if (durationDays < 1) durationDays = 1;
             if (durationDays > 14) durationDays = 14;
 
-            const tier = (subscription === 'Basic' || subscription === 'Basico') ? 'Basic' : 'Supreme';
+            const tier = 'Basic';
 
             const config = getConfig();
             if (!config.authUsers) config.authUsers = [];
