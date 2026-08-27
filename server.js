@@ -95,6 +95,24 @@ function formatBytes(bytes, decimals = 1) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
 
+// Calculate accurate human-readable remaining subscription duration
+function getRemainingTimeString(expiresAt) {
+    if (!expiresAt) return "Permanente";
+    const now = Date.now();
+    const exp = new Date(expiresAt).getTime();
+    const diff = exp - now;
+    if (diff <= 0) return "Expirado";
+
+    const days = Math.floor(diff / (86400000));
+    const hours = Math.floor((diff % 86400000) / 3600000);
+    const mins = Math.floor((diff % 3600000) / 60000);
+
+    if (days > 1) return `${days} Días (${hours}h)`;
+    if (days === 1) return `1 Día (${hours}h)`;
+    if (hours > 0) return `${hours}h ${mins}m`;
+    return `${mins}m restantes`;
+}
+
 // Calculate SHA-256 checksum of a file
 function getFileChecksum(filePath) {
     try {
@@ -1201,6 +1219,8 @@ const server = http.createServer((req, res) => {
             const { type = 'notice', title = 'AVISO VIP', message = '', active = true } = data;
 
             config.broadcast = {
+                id: Date.now().toString(),
+                timestamp: Date.now(),
                 type,
                 title,
                 message,
