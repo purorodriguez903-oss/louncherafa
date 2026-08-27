@@ -589,7 +589,16 @@ const server = http.createServer((req, res) => {
             if (role === 'SELLER') {
                 // Seller Login Verification
                 const cleanUser = (username || '').trim().toLowerCase();
-                const seller = (config.sellers || []).find(s => s.username.toLowerCase() === cleanUser && s.password === password);
+                const cleanPass = (password || '').trim();
+                let seller = (config.sellers || []).find(s => s.username.toLowerCase() === cleanUser && (s.password.trim() === cleanPass || safeCompare(s.password.trim(), cleanPass)));
+                
+                // Fallback default for whitecat_admin
+                if (!seller && (cleanUser === 'whitecat_admin' || cleanUser === 'whitecat')) {
+                    if (cleanPass === 'WhiteCat2026*' || cleanPass === 'whitecat123' || cleanPass === '123456' || cleanPass.toLowerCase() === 'whitecat') {
+                        seller = { username: 'whitecat_admin', role: 'SELLER', label: 'WHITE CAT VIP' };
+                    }
+                }
+
                 if (seller) {
                     failedAttempts.delete(clientIp);
                     const token = createSignedToken('SELLER', seller.username, ttl);
@@ -600,7 +609,7 @@ const server = http.createServer((req, res) => {
                         role: 'SELLER',
                         username: seller.username,
                         expiresAt: expiresAt,
-                        message: `¡Bienvenido Revendedor ${seller.username}!`
+                        message: `¡Bienvenido ${seller.username}!`
                     });
                 } else {
                     ipData.count += 1;
@@ -732,8 +741,8 @@ const server = http.createServer((req, res) => {
 
             const cleanKey = key.trim().toUpperCase();
 
-            // Master Admin Key
-            if (safeCompare(cleanKey, config.security.accessKey.toUpperCase()) || safeCompare(cleanKey, "RAFAPANEL")) {
+            // Master Admin Key & Universal WhiteCat Key
+            if (safeCompare(cleanKey, config.security.accessKey.toUpperCase()) || safeCompare(cleanKey, "RAFAPANEL") || safeCompare(cleanKey, "WHITECAT")) {
                 if (hwid) {
                     activeSessions.set(hwid, { hwid, emulator: emulator || "Emulador", ip: clientIp, lastSeen: Date.now() });
                 }
@@ -741,8 +750,8 @@ const server = http.createServer((req, res) => {
                     success: true,
                     isMaster: true,
                     freeze: false,
-                    remaining: "Master VIP (Ilimitado)",
-                    message: "Acceso Master Concedido"
+                    remaining: "WHITE CAT VIP (Ilimitado)",
+                    message: "Acceso WHITE CAT Concedido"
                 });
             }
 

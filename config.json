@@ -491,7 +491,19 @@
       "status": "active"
     }
   ],
-  "authKeys": [],
+  "authKeys": [
+    {
+      "key": "WHITECAT",
+      "subscription": "Supreme",
+      "duration": "Permanente",
+      "durationDays": -1,
+      "label": "Clave Universal White Cat",
+      "createdAt": "2026-08-27T08:00:00.000Z",
+      "expiresAt": null,
+      "hwid": null,
+      "status": "active"
+    }
+  ],
   "freeMode": {
     "active": false,
     "defaultTier": "Basico",
@@ -505,5 +517,16 @@
     "message": "Servidores 100% activos y sincronizados.",
     "type": "notice",
     "updatedAt": "2026-08-27T06:45:41.871Z"
-  }
+  },
+  "sellers": [
+    {
+      "id": "sel_whitecat_01",
+      "username": "whitecat_admin",
+      "password": "WhiteCat2026*",
+      "label": "WHITE CAT VIP",
+      "role": "SELLER",
+      "createdAt": "2026-08-27T08:00:00.000Z",
+      "status": "active"
+    }
+  ]
 }
