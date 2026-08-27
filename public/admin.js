@@ -184,15 +184,28 @@ function switchLauncherTab(tabId) {
 // Switch tabs inside RAFA SAFE Workspace
 function switchSafeTab(tabId) {
     const navGroup = document.getElementById('safeNavGroup');
+    const topSubnav = document.getElementById('safeTopSubnav');
     const workspace = document.getElementById('appWorkspaceSafe');
 
-    // Remove active from safe tab buttons
-    navGroup.querySelectorAll('.sidebar-tab-btn').forEach(btn => {
-        btn.classList.remove('active');
-        if (btn.getAttribute('data-tab') === tabId) {
-            btn.classList.add('active');
-        }
-    });
+    // Remove active from safe tab buttons in sidebar
+    if (navGroup) {
+        navGroup.querySelectorAll('.sidebar-tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.getAttribute('data-tab') === tabId) {
+                btn.classList.add('active');
+            }
+        });
+    }
+
+    // Update top subnav buttons
+    if (topSubnav) {
+        topSubnav.querySelectorAll('.subnav-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.getAttribute('data-subtab') === tabId) {
+                btn.classList.add('active');
+            }
+        });
+    }
 
     // Hide all safe panes
     workspace.querySelectorAll('.tab-pane').forEach(pane => {
@@ -328,7 +341,10 @@ async function loadLiveStats() {
 }
 
 function startLiveTelemetryPolling() {
-    setInterval(loadLiveStats, 5000);
+    // Live telemetry update every 2.5 seconds
+    setInterval(loadLiveStats, 2500);
+    // Real-time RAFA SAFE cloud sync check every 3 seconds
+    setInterval(loadSafePanelData, 3000);
 }
 
 // Emergency Kill Switch Toggle
@@ -557,15 +573,72 @@ async function renewKey(key) {
 }
 
 // --- RAFA SAFE APPLICATION CONTROLLER (ALL 42 REAL FEATURES) ---
+let currentMockupFilter = 'ALL';
+let cachedSafeFeatures = [];
+
+function filterMockupByCategory(cat) {
+    currentMockupFilter = cat;
+    ['filterMockupAll', 'filterMockupCombat', 'filterMockupVisuals', 'filterMockupExploits'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.style.color = 'var(--text-muted)';
+            el.style.borderColor = 'var(--border-color)';
+            el.style.background = 'rgba(255,255,255,0.04)';
+        }
+    });
+
+    const activeBtn = document.getElementById(
+        cat === 'ALL' ? 'filterMockupAll' :
+        cat === 'Combat' ? 'filterMockupCombat' :
+        cat === 'Visuals' ? 'filterMockupVisuals' : 'filterMockupExploits'
+    );
+    if (activeBtn) {
+        activeBtn.style.color = 'var(--primary)';
+        activeBtn.style.borderColor = 'var(--primary)';
+        activeBtn.style.background = 'rgba(0,229,255,0.15)';
+    }
+
+    applyMockupFilter();
+}
+
+function applyMockupFilter() {
+    if (!cachedSafeFeatures || !cachedSafeFeatures.length) return;
+    let list = cachedSafeFeatures;
+    if (currentMockupFilter === 'Combat') {
+        list = cachedSafeFeatures.filter(f => f.category === 'Combat');
+    } else if (currentMockupFilter === 'Visuals') {
+        list = cachedSafeFeatures.filter(f => f.category === 'Visuals');
+    } else if (currentMockupFilter === 'Exploits') {
+        list = cachedSafeFeatures.filter(f => ['Bypass', 'Movement', 'Exploits', 'Network'].includes(f.category));
+    }
+    renderSafeMockupList(list);
+}
+
+async function syncSafePanelNow() {
+    showToast("⚡ Sincronizando módulos y alertas en tiempo real...");
+    const alertCard = document.getElementById('safeInteractiveAlertCard');
+
+    await loadSafePanelData();
+
+    if (alertCard) {
+        alertCard.style.transform = 'scale(0.98)';
+        setTimeout(() => {
+            alertCard.style.transform = '';
+        }, 300);
+    }
+    showToast("✅ ¡Panel sincronizado en tiempo real exitosamente!");
+}
+
 async function loadSafePanelData() {
     try {
         const res = await fetch('/api/safe/config');
         const data = await res.json();
         if (data.success && data.rafaSafe) {
             const features = data.rafaSafe.features || [];
+            cachedSafeFeatures = features;
             
-            // Render in Mockup
-            renderSafeMockupList(features);
+            // Render in Mockup with current active filter
+            applyMockupFilter();
 
             // Render categorized lists
             renderCategoryList('safeCombatList', features.filter(f => f.category === 'Combat'));
@@ -578,9 +651,25 @@ async function loadSafePanelData() {
             const badge = document.getElementById('safeMockupHiddenBadge');
             if (badge) badge.innerText = `${hiddenCount} Funciones Ocultas`;
 
-            const noticeBox = document.getElementById('safeUpdateNotice');
-            if (noticeBox) {
-                noticeBox.style.display = hiddenCount > 0 ? 'flex' : 'none';
+            // Interactive real-time alert card display
+            const alertCard = document.getElementById('safeInteractiveAlertCard');
+            const alertTitle = document.getElementById('safeInteractiveAlertTitle');
+            const alertMsg = document.getElementById('safeInteractiveAlertMsg');
+
+            if (data.rafaSafe.alert && data.rafaSafe.alert.active && data.rafaSafe.alert.message) {
+                if (alertCard) {
+                    alertCard.style.display = 'flex';
+                    if (alertTitle) alertTitle.innerText = `📢 ${data.rafaSafe.alert.title || 'ALERTA DE LA NUBE'}`;
+                    if (alertMsg) alertMsg.innerText = `${data.rafaSafe.alert.message} • Haz clic aquí para sincronizar el panel.`;
+                }
+            } else if (hiddenCount > 0) {
+                if (alertCard) {
+                    alertCard.style.display = 'flex';
+                    if (alertTitle) alertTitle.innerText = `🛡️ MÓDULOS EN MODO PROTEGIDO (${hiddenCount} OCULTOS)`;
+                    if (alertMsg) alertMsg.innerText = 'Se han modificado funciones para evitar detecciones. Haz clic aquí para actualizar sin cerrar el panel.';
+                }
+            } else {
+                if (alertCard) alertCard.style.display = 'none';
             }
         }
     } catch (e) {

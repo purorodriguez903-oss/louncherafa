@@ -458,14 +458,48 @@
       <!-- ======================================================== -->
       <div id="appWorkspaceSafe" class="app-workspace" style="display: none;">
         
-        <!-- Live Banner for RAFA SAFE Updates -->
-        <div id="safeUpdateNotice" class="killswitch-card" style="display: none; background: rgba(168, 85, 247, 0.1); border-color: #a855f7;">
-          <div>
-            <h4 style="color: #a855f7; font-size: 1.1rem;">⚡ Nueva Actualización de Módulos (RAFA SAFE)</h4>
-            <p id="safeUpdateNoticeText" style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.2rem;">
-              Hay funciones ocultas en la nube. Los paneles in-game mostrarán el aviso para recargar.
-            </p>
+        <!-- RAFA SAFE Top Navigation Bar -->
+        <div class="workspace-top-bar">
+          <div class="workspace-subnav" id="safeTopSubnav">
+            <button class="subnav-btn active" data-subtab="mockup_safe" onclick="switchSafeTab('mockup_safe')">
+              🛡️ Panel Flotante
+            </button>
+            <button class="subnav-btn" data-subtab="alerts_safe" onclick="switchSafeTab('alerts_safe')">
+              📢 Alertas & Mensajes
+            </button>
+            <button class="subnav-btn" data-subtab="combat_safe" onclick="switchSafeTab('combat_safe')">
+              🎯 Combate (14)
+            </button>
+            <button class="subnav-btn" data-subtab="visuals_safe" onclick="switchSafeTab('visuals_safe')">
+              👁️ Visuales (14)
+            </button>
+            <button class="subnav-btn" data-subtab="exploits_safe" onclick="switchSafeTab('exploits_safe')">
+              ⚡ Exploits (14)
+            </button>
+            <button class="subnav-btn" data-subtab="keys_safe" onclick="switchSafeTab('keys_safe')">
+              🔑 Licencias VIP
+            </button>
           </div>
+          
+          <div class="live-sync-indicator">
+            <span class="live-dot-pulse"></span> Sincronizado en Tiempo Real
+          </div>
+        </div>
+
+        <!-- Interactive Real-Time Update Card (Clickable Cuadrito de Alerta) -->
+        <div id="safeInteractiveAlertCard" class="safe-live-update-alert-card" onclick="syncSafePanelNow()" style="display: none;">
+          <div style="display: flex; align-items: center; gap: 0.85rem;">
+            <span style="font-size: 1.6rem;">🔔</span>
+            <div>
+              <b id="safeInteractiveAlertTitle" style="color: #fff; font-size: 0.95rem;">ACTUALIZACIÓN DE MÓDULOS EN LA NUBE</b>
+              <p id="safeInteractiveAlertMsg" style="color: #cbd5e1; font-size: 0.82rem; margin-top: 0.2rem;">
+                Se han modificado funciones en tiempo real. Presiona aquí para actualizar sin cerrar el panel.
+              </p>
+            </div>
+          </div>
+          <button class="alert-sync-btn" type="button">
+            ⚡ Actualizar Ahora
+          </button>
         </div>
 
         <!-- TAB: MOCKUP SAFE (FLOTANTE EN VIVO) -->
@@ -490,10 +524,26 @@
               <span id="safeMockupHiddenBadge" class="badge-hwid">0 Funciones Ocultas</span>
             </div>
 
-            <!-- In-Mockup Alert Display -->
-            <div id="safeMockupAlertBox" style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; padding: 0.75rem 1rem; border-radius: var(--radius-sm); margin-bottom: 1.25rem; display: none;">
-              <b id="safeMockupAlertTitle" style="color: #ef4444; font-size: 0.9rem;">ALERTA</b>
-              <p id="safeMockupAlertMsg" style="color: var(--text-main); font-size: 0.85rem; margin-top: 0.2rem;">Mensaje</p>
+            <!-- In-Mockup Interactive Alert Display -->
+            <div id="safeMockupAlertBox" onclick="syncSafePanelNow()" style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; padding: 0.75rem 1rem; border-radius: var(--radius-sm); margin-bottom: 1.25rem; display: none; cursor: pointer; transition: var(--transition);">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <b id="safeMockupAlertTitle" style="color: #ef4444; font-size: 0.9rem;">ALERTA</b>
+                  <p id="safeMockupAlertMsg" style="color: var(--text-main); font-size: 0.85rem; margin-top: 0.2rem;">Mensaje</p>
+                </div>
+                <span style="font-size: 0.75rem; color: var(--primary); font-weight: 700;">👉 Clic para recargar</span>
+              </div>
+            </div>
+
+            <!-- Filter Buttons -->
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap;">
+              <div style="display: flex; gap: 0.4rem;">
+                <button class="btn-action active-filter" onclick="filterMockupByCategory('ALL')" id="filterMockupAll" style="color: var(--primary); border-color: var(--primary); background: rgba(0,229,255,0.15);">Todas (42)</button>
+                <button class="btn-action" onclick="filterMockupByCategory('Combat')" id="filterMockupCombat">🎯 Combate (14)</button>
+                <button class="btn-action" onclick="filterMockupByCategory('Visuals')" id="filterMockupVisuals">👁️ Visuales (14)</button>
+                <button class="btn-action" onclick="filterMockupByCategory('Exploits')" id="filterMockupExploits">⚡ Exploits (14)</button>
+              </div>
+              <button onclick="syncSafePanelNow()" class="btn-action" style="color: var(--success); border-color: var(--success);" title="Sincronizar en tiempo real">🔄 Forzar Recarga</button>
             </div>
 
             <!-- All Features Rendered in Mockup -->

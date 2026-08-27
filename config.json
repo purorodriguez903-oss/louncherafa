@@ -393,8 +393,8 @@
     }
   ],
   "stats": {
-    "dllDownloads": 0,
-    "launcherDownloads": 0,
+    "dllDownloads": 1,
+    "launcherDownloads": 2,
     "totalKeyVerifications": 0
   },
   "dlls": [

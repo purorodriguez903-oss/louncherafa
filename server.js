@@ -995,10 +995,45 @@ const server = http.createServer((req, res) => {
         });
     }
 
-    // 18. Download DLL by ID (Launcher download)
+    // 18. Download Launcher Executable (.EXE)
+    if ((pathname === '/api/download/launcher' || pathname === '/download/launcher' || pathname === '/api/download/Launcher_RafaPanel.exe') && req.method === 'GET') {
+        const filePath = path.join(UPLOADS_DIR, 'Launcher_RafaPanel.exe');
+        if (!fs.existsSync(filePath)) return sendJson(404, { error: 'Launcher_RafaPanel.exe no está subido aún en el servidor' });
+
+        const config = getConfig();
+        config.stats.launcherDownloads = (config.stats.launcherDownloads || 0) + 1;
+        saveConfig(config);
+
+        res.writeHead(200, {
+            'Content-Type': 'application/octet-stream',
+            'Content-Disposition': 'attachment; filename="Launcher_RafaPanel.exe"',
+            'Content-Length': fs.statSync(filePath).size
+        });
+        return fs.createReadStream(filePath).pipe(res);
+    }
+
+    // 19. Download DLL by ID (Launcher download)
     const downloadMatch = pathname.match(/^\/api\/download\/([a-zA-Z0-9_-]+)$/);
     if (downloadMatch && req.method === 'GET') {
         const dllId = downloadMatch[1];
+        
+        // Safety check if requested launcher via ID
+        if (dllId.toLowerCase() === 'launcher') {
+            const filePath = path.join(UPLOADS_DIR, 'Launcher_RafaPanel.exe');
+            if (!fs.existsSync(filePath)) return sendJson(404, { error: 'Launcher_RafaPanel.exe no está subido aún' });
+
+            const config = getConfig();
+            config.stats.launcherDownloads = (config.stats.launcherDownloads || 0) + 1;
+            saveConfig(config);
+
+            res.writeHead(200, {
+                'Content-Type': 'application/octet-stream',
+                'Content-Disposition': 'attachment; filename="Launcher_RafaPanel.exe"',
+                'Content-Length': fs.statSync(filePath).size
+            });
+            return fs.createReadStream(filePath).pipe(res);
+        }
+
         const config = getConfig();
         const targetDll = config.dlls.find(d => d.id === dllId);
         if (!targetDll) return sendJson(404, { error: 'Módulo no encontrado' });
@@ -1017,25 +1052,11 @@ const server = http.createServer((req, res) => {
         return fs.createReadStream(filePath).pipe(res);
     }
 
-    // 19. Download Launcher Executable
-    if ((pathname === '/api/download/launcher' || pathname === '/download/launcher') && req.method === 'GET') {
-        const filePath = path.join(UPLOADS_DIR, 'Launcher_RafaPanel.exe');
-        if (!fs.existsSync(filePath)) return sendJson(404, { error: 'Launcher_RafaPanel.exe no está subido aún' });
-
-        const config = getConfig();
-        config.stats.launcherDownloads = (config.stats.launcherDownloads || 0) + 1;
-        saveConfig(config);
-
-        res.writeHead(200, {
-            'Content-Type': 'application/octet-stream',
-            'Content-Disposition': 'attachment; filename="Launcher_RafaPanel.exe"',
-            'Content-Length': fs.statSync(filePath).size
-        });
-        return fs.createReadStream(filePath).pipe(res);
-    }
-
     // --- STATIC FILES SERVING (PUBLIC DIR) ---
     let reqPath = pathname === '/' ? '/index.html' : pathname;
+    if (pathname === '/admin' || pathname === '/admin/') {
+        reqPath = '/admin.html';
+    }
     const safePath = path.normalize(path.join(PUBLIC_DIR, reqPath));
 
     if (!safePath.startsWith(PUBLIC_DIR)) {
