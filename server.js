@@ -959,6 +959,80 @@ const server = http.createServer((req, res) => {
         });
     }
 
+    // Public Self-Registration for Web Visitors (Strict Max 14 Days)
+    if (pathname === '/api/public/register-user' && req.method === 'POST') {
+        return readBody((err, data) => {
+            if (err || !data) return sendJson(400, { success: false, message: "Datos inválidos." });
+            const { username, password, days, subscription } = data;
+            if (!username || !password) {
+                return sendJson(400, { success: false, message: "Nombre de usuario y contraseña son requeridos." });
+            }
+
+            const cleanUser = username.trim();
+            const cleanPass = password.trim();
+            if (cleanUser.length < 3 || cleanPass.length < 3) {
+                return sendJson(400, { success: false, message: "El usuario y la contraseña deben tener al menos 3 caracteres." });
+            }
+
+            // Strictly enforce maximum 14 days
+            let durationDays = parseInt(days) || 1;
+            if (durationDays < 1) durationDays = 1;
+            if (durationDays > 14) durationDays = 14;
+
+            const tier = (subscription === 'Basic' || subscription === 'Basico') ? 'Basic' : 'Supreme';
+
+            const config = getConfig();
+            if (!config.authUsers) config.authUsers = [];
+
+            if (config.authUsers.some(u => u.username.toLowerCase() === cleanUser.toLowerCase())) {
+                return sendJson(200, { success: false, message: `El usuario '${cleanUser}' ya existe. Elige otro nombre.` });
+            }
+
+            const now = Date.now();
+            const expiresAt = new Date(now + durationDays * 86400000).toISOString();
+
+            const newUser = {
+                username: cleanUser,
+                password: cleanPass,
+                subscription: tier,
+                duration: `${durationDays} Días`,
+                durationDays: durationDays,
+                label: "Registro Web Pública",
+                createdAt: new Date().toISOString(),
+                expiresAt: expiresAt,
+                hwid: null,
+                lastIp: clientIp,
+                status: 'active'
+            };
+
+            config.authUsers.unshift(newUser);
+            saveConfig(config);
+
+            sendDiscordEmbed({
+                title: "🌐 Nueva Cuenta Creada desde la Web Pública",
+                description: `Se ha registrado una nueva cuenta en la web oficial.`,
+                color: tier === 'Supreme' ? 0xFBBF24 : 0x00E5FF,
+                fields: [
+                    { name: "Usuario", value: `\`${newUser.username}\``, inline: true },
+                    { name: "Suscripción", value: `**${tier}**`, inline: true },
+                    { name: "Días de Acceso", value: `${durationDays} Días (Máx 14d)`, inline: true }
+                ]
+            });
+
+            return sendJson(200, {
+                success: true,
+                message: `¡Cuenta creada exitosamente! Tienes ${durationDays} días de acceso con suscripción ${tier}.`,
+                user: {
+                    username: cleanUser,
+                    password: cleanPass,
+                    subscription: tier,
+                    durationDays: durationDays,
+                    expiresAt: expiresAt
+                }
+            });
+        });
+    }
+
     // Auth 2. Create User (Username + Password + Subscription + Duration)
     if (pathname === '/api/auth/user/create' && req.method === 'POST') {
         return readBody((err, data) => {
