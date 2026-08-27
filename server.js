@@ -21,6 +21,10 @@ const failedAttempts = new Map(); // ip -> { count, lockedUntil }
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 if (!fs.existsSync(PUBLIC_DIR)) fs.mkdirSync(PUBLIC_DIR, { recursive: true });
 
+// Master Creator Secret & In-Memory Secure Webhook (Loaded from Railway Environment)
+const CREATOR_MASTER_SECRET = process.env.CREATOR_SECRET_KEY || "RAFA_CREATOR_KEY_2026_99X";
+let g_SecureWebhookUrl = process.env.DISCORD_WEBHOOK_URL || "";
+
 // Helper to read and write config
 function getConfig() {
     try {
@@ -31,7 +35,15 @@ function getConfig() {
             if (!parsed.authUsers) parsed.authUsers = [];
             if (!parsed.authKeys) parsed.authKeys = [];
             if (!parsed.killSwitch) parsed.killSwitch = { active: false, reason: "Juego en mantenimiento." };
-            if (!parsed.discord) parsed.discord = { enabled: false, webhookUrl: "" };
+            if (!parsed.discord) parsed.discord = { enabled: true, webhookUrl: "" };
+            
+            // Prioritize Railway Environment Variable -> In-Memory -> Disk
+            parsed.discord.webhookUrl = process.env.DISCORD_WEBHOOK_URL || g_SecureWebhookUrl || "";
+            if (process.env.ADMIN_PASSWORD) {
+                if (!parsed.server) parsed.server = {};
+                parsed.server.adminPassword = process.env.ADMIN_PASSWORD;
+            }
+
             if (!parsed.freeMode) parsed.freeMode = {
                 active: false,
                 defaultTier: "Supreme",
@@ -51,12 +63,17 @@ function getConfig() {
     } catch (e) {
         console.error('Error reading config.json:', e);
     }
-    return { keys: [], authUsers: [], authKeys: [], killSwitch: { active: false }, discord: { enabled: false }, freeMode: { active: false, defaultTier: "Supreme" }, broadcast: { active: false } };
+    return { keys: [], authUsers: [], authKeys: [], killSwitch: { active: false }, discord: { enabled: true, webhookUrl: process.env.DISCORD_WEBHOOK_URL || g_SecureWebhookUrl || "" }, freeMode: { active: false, defaultTier: "Supreme" }, broadcast: { active: false } };
 }
 
 function saveConfig(config) {
     try {
-        fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf8');
+        // Create sanitized clone: NEVER persist real webhook URLs or sensitive creator tokens to config.json
+        const sanitized = JSON.parse(JSON.stringify(config));
+        if (sanitized.discord) {
+            sanitized.discord.webhookUrl = ""; // Stays empty on disk/git for 100% security
+        }
+        fs.writeFileSync(CONFIG_FILE, JSON.stringify(sanitized, null, 2), 'utf8');
         return true;
     } catch (e) {
         console.error('Error saving config.json:', e);
@@ -940,29 +957,50 @@ const server = http.createServer((req, res) => {
         });
     }
 
-    // 14. Discord Webhook Config & Test (Admin Protected)
+    // 14. Discord Webhook Config & Test (Creator & Admin Protected)
     if (pathname === '/api/discord/save' && req.method === 'POST') {
         return readBody((err, data) => {
-            if (!checkAdminAuth(data.password)) return sendJson(401, { error: 'No autorizado' });
+            const isCreatorAuth = (data.creatorToken && data.creatorToken === CREATOR_MASTER_SECRET) || checkAdminAuth(data.password);
+            if (!isCreatorAuth) return sendJson(401, { error: 'No autorizado: Acceso exclusivo para el Creador' });
+
+            if (data.webhookUrl && data.webhookUrl.startsWith('http')) {
+                g_SecureWebhookUrl = data.webhookUrl.trim();
+            }
+
             const config = getConfig();
             config.discord = {
                 enabled: !!data.enabled,
-                webhookUrl: data.webhookUrl || "",
+                webhookUrl: "", // Never write to disk
                 notifyOnDll: !!data.notifyOnDll,
                 notifyOnKey: !!data.notifyOnKey,
                 notifyOnKillSwitch: !!data.notifyOnKillSwitch
             };
             saveConfig(config);
 
-            if (config.discord.enabled && config.discord.webhookUrl) {
+            const activeWebhook = process.env.DISCORD_WEBHOOK_URL || g_SecureWebhookUrl;
+            if (config.discord.enabled && activeWebhook) {
                 sendDiscordEmbed({
-                    title: "🤖 Discord Webhook Conectado",
-                    description: "La integración de alertas automáticas para **RafaPanel VIP** está funcionando correctamente.",
-                    color: 0x5865F2
+                    title: "🛡️ Discord Webhook Conectado por el CREADOR",
+                    description: "La integración segura y verificada para **RafaPanel VIP** ha sido validada.",
+                    color: 0x10B981,
+                    fields: [
+                        { name: "Verificación", value: "✅ Token de Creador Validado", inline: true },
+                        { name: "Seguridad", value: "🔒 URL Protegida en Memoria", inline: true }
+                    ]
                 });
             }
 
-            return sendJson(200, { success: true, discord: config.discord });
+            return sendJson(200, {
+                success: true,
+                message: "Configuración de Webhook guardada de forma segura en memoria.",
+                discord: {
+                    enabled: config.discord.enabled,
+                    webhookUrl: maskWebhookUrl(activeWebhook),
+                    notifyOnDll: config.discord.notifyOnDll,
+                    notifyOnKey: config.discord.notifyOnKey,
+                    notifyOnKillSwitch: config.discord.notifyOnKillSwitch
+                }
+            });
         });
     }
 

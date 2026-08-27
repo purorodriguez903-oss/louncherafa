@@ -14,7 +14,7 @@
   },
   "discord": {
     "enabled": true,
-    "webhookUrl": "https://ptb.discord.com/api/webhooks/1542451950669271090/EGJV0gT6ZTpfskRdR2GAL5m8h8-jqJo5MygLn6JR9yVJtZ_OLo_0saWf0bR1iBbdj9Y_",
+    "webhookUrl": "",
     "notifyOnDll": true,
     "notifyOnKey": true,
     "notifyOnKillSwitch": true
