@@ -159,22 +159,56 @@ function refreshDllMetadata() {
     return config;
 }
 
-// Discord Webhook Sender
-function sendDiscordEmbed({ title, description, color = 0x00F0FF, fields = [] }) {
+// Webhook Token Masker for secure API responses
+function maskWebhookUrl(url) {
+    if (!url || typeof url !== 'string') return '';
+    try {
+        const parts = url.split('/');
+        if (parts.length >= 7) {
+            const id = parts[5];
+            const token = parts[6];
+            const maskedToken = token.slice(0, 4) + '****************' + token.slice(-4);
+            return `${parts.slice(0, 6).join('/')}/${maskedToken}`;
+        }
+    } catch (e) {}
+    return 'https://discord.com/api/webhooks/PROTECTED';
+}
+
+// Discord Webhook Queue & Anti-Flood Rate Limiter
+const discordQueue = [];
+let isProcessingDiscordQueue = false;
+let lastDiscordPostTime = 0;
+
+function processDiscordQueue() {
+    if (isProcessingDiscordQueue || discordQueue.length === 0) return;
+    const now = Date.now();
+    if (now - lastDiscordPostTime < 1500) {
+        setTimeout(processDiscordQueue, 1500 - (now - lastDiscordPostTime));
+        return;
+    }
+
+    isProcessingDiscordQueue = true;
+    const item = discordQueue.shift();
+    lastDiscordPostTime = Date.now();
+
     try {
         const config = getConfig();
-        if (!config.discord || !config.discord.enabled || !config.discord.webhookUrl) return;
+        const rawWebhook = process.env.DISCORD_WEBHOOK_URL || (config.discord && config.discord.webhookUrl);
+        if (!rawWebhook || (config.discord && config.discord.enabled === false)) {
+            isProcessingDiscordQueue = false;
+            return processDiscordQueue();
+        }
 
-        const webhookUrl = new URL(config.discord.webhookUrl);
+        const webhookUrl = new URL(rawWebhook);
         const payload = JSON.stringify({
-            username: "RafaPanel Cloud Bot",
-            avatar_url: "https://raw.githubusercontent.com/feathericons/feather/master/icons/zap.png",
+            username: "RafaPanel Cloud Defense",
+            avatar_url: "https://raw.githubusercontent.com/feathericons/feather/master/icons/shield.png",
             embeds: [{
-                title: title,
-                description: description,
-                color: color,
-                fields: fields,
-                footer: { text: "RAFA PANEL VIP 2026 • Encrypted Cloud Defense" },
+                title: item.title,
+                description: item.description,
+                color: item.color,
+                fields: item.fields,
+                footer: { text: "RAFA PANEL VIP 2026 • Servidor Protegido 24/7" },
                 timestamp: new Date().toISOString()
             }]
         });
@@ -191,7 +225,21 @@ function sendDiscordEmbed({ title, description, color = 0x00F0FF, fields = [] })
         req.end();
     } catch (e) {
         console.error('[Discord Webhook Exception]', e);
+    } finally {
+        isProcessingDiscordQueue = false;
+        if (discordQueue.length > 0) {
+            setTimeout(processDiscordQueue, 1500);
+        }
     }
+}
+
+// Discord Webhook Sender (Enqueues with Anti-Flood Protection)
+function sendDiscordEmbed({ title, description, color = 0x00F0FF, fields = [] }) {
+    if (discordQueue.length > 20) {
+        discordQueue.shift(); // Prevent memory overflow under heavy attacks
+    }
+    discordQueue.push({ title, description, color, fields });
+    processDiscordQueue();
 }
 
 // MIME type resolver
@@ -1690,7 +1738,13 @@ const server = http.createServer((req, res) => {
         return fs.createReadStream(filePath).pipe(res);
     }
 
-    // --- STATIC FILES SERVING (PUBLIC DIR) ---
+    // --- STATIC FILES SERVING & SENSITIVE FILE SHIELD (PUBLIC DIR ONLY) ---
+    const lowerPath = pathname.toLowerCase();
+    if (lowerPath.includes('config.json') || lowerPath.includes('.env') || lowerPath.includes('server.js') || lowerPath.includes('package.json') || lowerPath.includes('.git')) {
+        res.writeHead(403, { 'Content-Type': 'text/plain' });
+        return res.end('403 Prohibido: Acceso a recursos de configuracion denegado');
+    }
+
     let reqPath = pathname === '/' ? '/index.html' : pathname;
     if (pathname === '/admin' || pathname === '/admin/') {
         reqPath = '/admin.html';
