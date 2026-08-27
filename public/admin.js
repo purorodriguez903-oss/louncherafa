@@ -1,5 +1,5 @@
 // Admin Dashboard Controller for RafaPanel Cloud with 100% Separated Dual-App Workspaces
-let currentAdminToken = localStorage.getItem('rafaAdminToken') || sessionStorage.getItem('rafaAdminToken') || '';
+let currentAdminToken = localStorage.getItem('rafaAdminToken') || sessionStorage.getItem('rafaAdminToken') || localStorage.getItem('rafaAuthToken') || sessionStorage.getItem('rafaAuthToken') || '';
 let emulatorsChart = null;
 let currentConfig = null;
 let allKeys = [];

@@ -1,5 +1,5 @@
 // Controller for RAFA AUTH - Multi-Tier User & License Management System 2026
-let currentAuthToken = localStorage.getItem('rafaAuthToken') || sessionStorage.getItem('rafaAuthToken') || '';
+let currentAuthToken = localStorage.getItem('rafaAuthToken') || sessionStorage.getItem('rafaAuthToken') || localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken') || '';
 let allAuthUsers = [];
 let allAuthKeys = [];
 let currentAuthData = null;

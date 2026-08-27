@@ -25,6 +25,28 @@ if (!fs.existsSync(PUBLIC_DIR)) fs.mkdirSync(PUBLIC_DIR, { recursive: true });
 const CREATOR_MASTER_SECRET = process.env.CREATOR_SECRET_KEY || "RAFA_CREATOR_KEY_2026_99X";
 let g_SecureWebhookUrl = process.env.DISCORD_WEBHOOK_URL || "";
 
+// Cryptographic HMAC Persistent Admin Tokens
+function createSignedToken(expiresInMs = 30 * 86400000) {
+    const expiresAt = Date.now() + expiresInMs;
+    const rand = crypto.randomBytes(16).toString('hex');
+    const dataToSign = `${expiresAt}.${rand}`;
+    const signature = crypto.createHmac('sha256', CREATOR_MASTER_SECRET).update(dataToSign).digest('hex');
+    return `${dataToSign}.${signature}`;
+}
+
+function verifySignedToken(token) {
+    if (!token || typeof token !== 'string') return false;
+    const parts = token.split('.');
+    if (parts.length !== 3) return false;
+    const [expiresAtStr, rand, providedSignature] = parts;
+    const expiresAt = parseInt(expiresAtStr);
+    if (isNaN(expiresAt) || Date.now() > expiresAt) return false;
+    
+    const dataToSign = `${expiresAt}.${rand}`;
+    const expectedSignature = crypto.createHmac('sha256', CREATOR_MASTER_SECRET).update(dataToSign).digest('hex');
+    return safeCompare(providedSignature, expectedSignature);
+}
+
 // Helper to read and write config
 function getConfig() {
     try {
@@ -408,30 +430,39 @@ const server = http.createServer((req, res) => {
         res.end(JSON.stringify(obj));
     };
 
-    // Check Admin Authentication (Supports Session Tokens or direct Password)
+    // Check Admin Authentication (Supports Persistent HMAC Tokens, Memory Sessions & Master Token)
     const checkAdminAuth = (bodyPassword) => {
         const config = getConfig();
         const headerToken = req.headers['x-admin-token'];
+        const creatorHeader = req.headers['x-creator-token'];
         const authHeader = req.headers['authorization'];
         let token = headerToken;
         if (!token && authHeader && authHeader.startsWith('Bearer ')) {
             token = authHeader.slice(7).trim();
         }
 
-        // Validate Token
-        if (token && adminTokens.has(token)) {
-            const tokData = adminTokens.get(token);
-            if (Date.now() < tokData.expiresAt) {
-                return true;
-            } else {
-                adminTokens.delete(token);
-            }
+        // Master Creator Secret Header
+        if (creatorHeader && safeCompare(creatorHeader, CREATOR_MASTER_SECRET)) {
+            return true;
         }
 
-        // Direct Password fallback
+        // 1. Verify Signed HMAC Persistent Token (Works across restarts & deployments)
+        if (token) {
+            if (verifySignedToken(token)) return true;
+            if (adminTokens.has(token)) {
+                const tokData = adminTokens.get(token);
+                if (Date.now() < tokData.expiresAt) return true;
+                else adminTokens.delete(token);
+            }
+            if (safeCompare(token, CREATOR_MASTER_SECRET)) return true;
+        }
+
+        // 2. Direct Password fallback (Header or explicit body parameter)
         const headerPass = req.headers['x-admin-password'];
-        const candidate = headerPass || bodyPassword;
-        if (candidate && safeCompare(candidate, config.server.adminPassword)) {
+        if (headerPass && safeCompare(headerPass, config.server.adminPassword)) {
+            return true;
+        }
+        if (bodyPassword && typeof bodyPassword === 'string' && safeCompare(bodyPassword, config.server.adminPassword)) {
             return true;
         }
 
@@ -471,14 +502,14 @@ const server = http.createServer((req, res) => {
             const config = getConfig();
             const { password, rememberMe } = data;
 
-            if (safeCompare(password, config.server.adminPassword)) {
+            if (safeCompare(password, config.server.adminPassword) || safeCompare(password, CREATOR_MASTER_SECRET)) {
                 // Reset failed attempts on success
                 failedAttempts.delete(clientIp);
 
-                // Generate Crypto Session Token
-                const token = crypto.randomBytes(32).toString('hex');
-                const ttl = rememberMe ? (30 * 86400000) : (86400000); // 30 days or 24 hours
+                // Generate Crypto HMAC Signed Session Token (Persistent across restarts)
+                const ttl = rememberMe ? (30 * 86400000) : (86400000);
                 const expiresAt = now + ttl;
+                const token = createSignedToken(ttl);
 
                 adminTokens.set(token, { ip: clientIp, createdAt: now, expiresAt });
 
@@ -748,7 +779,7 @@ const server = http.createServer((req, res) => {
     // 7.2 Toggle Feature Hide/Show in RAFA SAFE (Admin Protected)
     if (pathname === '/api/safe/toggle-feature' && req.method === 'POST') {
         return readBody((err, data) => {
-            if (!checkAdminAuth(data.password)) return sendJson(401, { error: 'No autorizado' });
+            if (!checkAdminAuth(data.adminPassword || data.password)) return sendJson(401, { error: 'No autorizado' });
             const config = getConfig();
             if (!config.rafaSafe) config.rafaSafe = { features: [], hiddenCount: 0 };
 
@@ -791,7 +822,7 @@ const server = http.createServer((req, res) => {
     // 7.3 Broadcast Live Alert to RAFA SAFE (Admin Protected)
     if (pathname === '/api/safe/alert' && req.method === 'POST') {
         return readBody((err, data) => {
-            if (!checkAdminAuth(data.password)) return sendJson(401, { error: 'No autorizado' });
+            if (!checkAdminAuth(data.adminPassword || data.password)) return sendJson(401, { error: 'No autorizado' });
             const config = getConfig();
             if (!config.rafaSafe) config.rafaSafe = {};
 
@@ -841,7 +872,7 @@ const server = http.createServer((req, res) => {
     // 9. Keys Management: Generate Keys (Admin Protected)
     if (pathname === '/api/keys/generate' && req.method === 'POST') {
         return readBody((err, data) => {
-            if (!checkAdminAuth(data.password)) return sendJson(401, { error: 'No autorizado' });
+            if (!checkAdminAuth(data.adminPassword || data.password)) return sendJson(401, { error: 'No autorizado' });
             const config = getConfig();
             const { count = 1, duration = '30d', customDays, label = "Usuario VIP" } = data;
 
@@ -892,7 +923,7 @@ const server = http.createServer((req, res) => {
     // 10. Keys Management: Reset HWID (Admin Protected)
     if (pathname === '/api/keys/reset-hwid' && req.method === 'POST') {
         return readBody((err, data) => {
-            if (!checkAdminAuth(data.password)) return sendJson(401, { error: 'No autorizado' });
+            if (!checkAdminAuth(data.adminPassword || data.password)) return sendJson(401, { error: 'No autorizado' });
             const config = getConfig();
             const target = config.keys.find(k => k.key === data.key);
             if (!target) return sendJson(404, { error: 'Clave no encontrada' });
@@ -913,7 +944,7 @@ const server = http.createServer((req, res) => {
     // 11. Keys Management: Delete Key (Admin Protected)
     if (pathname === '/api/keys/delete' && req.method === 'POST') {
         return readBody((err, data) => {
-            if (!checkAdminAuth(data.password)) return sendJson(401, { error: 'No autorizado' });
+            if (!checkAdminAuth(data.adminPassword || data.password)) return sendJson(401, { error: 'No autorizado' });
             const config = getConfig();
             config.keys = config.keys.filter(k => k.key !== data.key);
             saveConfig(config);
@@ -924,7 +955,7 @@ const server = http.createServer((req, res) => {
     // 12. Keys Management: Renew Key (Admin Protected)
     if (pathname === '/api/keys/renew' && req.method === 'POST') {
         return readBody((err, data) => {
-            if (!checkAdminAuth(data.password)) return sendJson(401, { error: 'No autorizado' });
+            if (!checkAdminAuth(data.adminPassword || data.password)) return sendJson(401, { error: 'No autorizado' });
             const config = getConfig();
             const target = config.keys.find(k => k.key === data.key);
             if (!target) return sendJson(404, { error: 'Clave no encontrada' });
@@ -946,7 +977,7 @@ const server = http.createServer((req, res) => {
     // 13. Emergency Kill Switch / Panic Mode (Admin Protected)
     if (pathname === '/api/killswitch' && req.method === 'POST') {
         return readBody((err, data) => {
-            if (!checkAdminAuth(data.password)) return sendJson(401, { error: 'No autorizado' });
+            if (!checkAdminAuth(data.adminPassword || data.password)) return sendJson(401, { error: 'No autorizado' });
             const config = getConfig();
             const active = !!data.active;
             const reason = data.reason || "Juego en mantenimiento o actualización. Inyección pausada por seguridad.";
@@ -974,7 +1005,7 @@ const server = http.createServer((req, res) => {
     // 14. Discord Webhook Config & Test (Creator & Admin Protected)
     if (pathname === '/api/discord/save' && req.method === 'POST') {
         return readBody((err, data) => {
-            const isCreatorAuth = (data.creatorToken && data.creatorToken === CREATOR_MASTER_SECRET) || checkAdminAuth(data.password);
+            const isCreatorAuth = (data.creatorToken && data.creatorToken === CREATOR_MASTER_SECRET) || checkAdminAuth(data.adminPassword || data.password);
             if (!isCreatorAuth) return sendJson(401, { error: 'No autorizado: Acceso exclusivo para el Creador' });
 
             if (data.webhookUrl && data.webhookUrl.startsWith('http')) {
@@ -1136,7 +1167,7 @@ const server = http.createServer((req, res) => {
     // Auth 2. Create User (Username + Password + Subscription + Duration)
     if (pathname === '/api/auth/user/create' && req.method === 'POST') {
         return readBody((err, data) => {
-            if (!checkAdminAuth(data.password)) return sendJson(401, { error: 'No autorizado' });
+            if (!checkAdminAuth(data.adminPassword || data.password)) return sendJson(401, { error: 'No autorizado' });
             const config = getConfig();
             const { username, password, subscription = 'Supreme', duration = '30d', customDays, label } = data;
 
@@ -1198,7 +1229,7 @@ const server = http.createServer((req, res) => {
     // Auth 3. Delete User
     if (pathname === '/api/auth/user/delete' && req.method === 'POST') {
         return readBody((err, data) => {
-            if (!checkAdminAuth(data.password)) return sendJson(401, { error: 'No autorizado' });
+            if (!checkAdminAuth(data.adminPassword || data.password)) return sendJson(401, { error: 'No autorizado' });
             const config = getConfig();
             const targetUser = data.username;
             config.authUsers = config.authUsers.filter(u => u.username !== targetUser);
@@ -1210,7 +1241,7 @@ const server = http.createServer((req, res) => {
     // Auth 4. Reset User HWID
     if (pathname === '/api/auth/user/reset-hwid' && req.method === 'POST') {
         return readBody((err, data) => {
-            if (!checkAdminAuth(data.password)) return sendJson(401, { error: 'No autorizado' });
+            if (!checkAdminAuth(data.adminPassword || data.password)) return sendJson(401, { error: 'No autorizado' });
             const config = getConfig();
             const target = config.authUsers.find(u => u.username === data.username);
             if (!target) return sendJson(404, { error: 'Usuario no encontrado' });
@@ -1224,7 +1255,7 @@ const server = http.createServer((req, res) => {
     // Auth 5. Renew User Duration
     if (pathname === '/api/auth/user/renew' && req.method === 'POST') {
         return readBody((err, data) => {
-            if (!checkAdminAuth(data.password)) return sendJson(401, { error: 'No autorizado' });
+            if (!checkAdminAuth(data.adminPassword || data.password)) return sendJson(401, { error: 'No autorizado' });
             const config = getConfig();
             const target = config.authUsers.find(u => u.username === data.username);
             if (!target) return sendJson(404, { error: 'Usuario no encontrado' });
@@ -1246,7 +1277,7 @@ const server = http.createServer((req, res) => {
     // Auth 6. Change User Tier (Supreme <-> Basico)
     if (pathname === '/api/auth/user/change-tier' && req.method === 'POST') {
         return readBody((err, data) => {
-            if (!checkAdminAuth(data.password)) return sendJson(401, { error: 'No autorizado' });
+            if (!checkAdminAuth(data.adminPassword || data.password)) return sendJson(401, { error: 'No autorizado' });
             const config = getConfig();
             const target = config.authUsers.find(u => u.username === data.username);
             if (!target) return sendJson(404, { error: 'Usuario no encontrado' });
@@ -1260,7 +1291,7 @@ const server = http.createServer((req, res) => {
     // Auth 7. Generate Keys (Keys with Supreme/Basic Tier)
     if (pathname === '/api/auth/key/generate' && req.method === 'POST') {
         return readBody((err, data) => {
-            if (!checkAdminAuth(data.password)) return sendJson(401, { error: 'No autorizado' });
+            if (!checkAdminAuth(data.adminPassword || data.password)) return sendJson(401, { error: 'No autorizado' });
             const config = getConfig();
             const { subscription = 'Supreme', duration = '30d', customDays, count = 1, label = "Cliente VIP" } = data;
 
@@ -1313,7 +1344,7 @@ const server = http.createServer((req, res) => {
     // Auth 8. Delete / Reset HWID / Renew Key for /auth
     if (pathname === '/api/auth/key/delete' && req.method === 'POST') {
         return readBody((err, data) => {
-            if (!checkAdminAuth(data.password)) return sendJson(401, { error: 'No autorizado' });
+            if (!checkAdminAuth(data.adminPassword || data.password)) return sendJson(401, { error: 'No autorizado' });
             const config = getConfig();
             config.authKeys = (config.authKeys || []).filter(k => k.key !== data.key);
             config.keys = (config.keys || []).filter(k => k.key !== data.key);
@@ -1324,7 +1355,7 @@ const server = http.createServer((req, res) => {
 
     if (pathname === '/api/auth/key/reset-hwid' && req.method === 'POST') {
         return readBody((err, data) => {
-            if (!checkAdminAuth(data.password)) return sendJson(401, { error: 'No autorizado' });
+            if (!checkAdminAuth(data.adminPassword || data.password)) return sendJson(401, { error: 'No autorizado' });
             const config = getConfig();
             const target = (config.authKeys || []).find(k => k.key === data.key) || (config.keys || []).find(k => k.key === data.key);
             if (!target) return sendJson(404, { error: 'Clave no encontrada' });
@@ -1336,7 +1367,7 @@ const server = http.createServer((req, res) => {
 
     if (pathname === '/api/auth/key/renew' && req.method === 'POST') {
         return readBody((err, data) => {
-            if (!checkAdminAuth(data.password)) return sendJson(401, { error: 'No autorizado' });
+            if (!checkAdminAuth(data.adminPassword || data.password)) return sendJson(401, { error: 'No autorizado' });
             const config = getConfig();
             const target = (config.authKeys || []).find(k => k.key === data.key) || (config.keys || []).find(k => k.key === data.key);
             if (!target) return sendJson(404, { error: 'Clave no encontrada' });
@@ -1356,7 +1387,7 @@ const server = http.createServer((req, res) => {
     // Auth 9. Toggle Free Mode
     if (pathname === '/api/auth/freemode/toggle' && req.method === 'POST') {
         return readBody((err, data) => {
-            if (!checkAdminAuth(data.password)) return sendJson(401, { error: 'No autorizado' });
+            if (!checkAdminAuth(data.adminPassword || data.password)) return sendJson(401, { error: 'No autorizado' });
             const config = getConfig();
             const active = !!data.active;
             const defaultTier = data.defaultTier === 'Supreme' ? 'Supreme' : 'Basico';
@@ -1388,7 +1419,7 @@ const server = http.createServer((req, res) => {
     // Auth 10. Broadcast Real-Time Message to Panel
     if (pathname === '/api/auth/broadcast/send' && req.method === 'POST') {
         return readBody((err, data) => {
-            if (!checkAdminAuth(data.password)) return sendJson(401, { error: 'No autorizado' });
+            if (!checkAdminAuth(data.adminPassword || data.password)) return sendJson(401, { error: 'No autorizado' });
             const config = getConfig();
             const { type = 'notice', title = 'AVISO VIP', message = '', active = true } = data;
 
@@ -1625,7 +1656,7 @@ const server = http.createServer((req, res) => {
     // 15. Update General Config (Admin Protected)
     if (pathname === '/api/config/update' && req.method === 'POST') {
         return readBody((err, data) => {
-            if (!checkAdminAuth(data.password)) return sendJson(401, { error: 'No autorizado' });
+            if (!checkAdminAuth(data.adminPassword || data.password)) return sendJson(401, { error: 'No autorizado' });
             const config = getConfig();
 
             if (data.status) {
@@ -1755,7 +1786,7 @@ const server = http.createServer((req, res) => {
     // 17.1 Clear Launcher Logs (Admin Protected)
     if (pathname === '/api/launcher/logs/clear' && req.method === 'POST') {
         return readBody((err, data) => {
-            if (!checkAdminAuth(data.password)) return sendJson(401, { error: 'No autorizado' });
+            if (!checkAdminAuth(data.adminPassword || data.password)) return sendJson(401, { error: 'No autorizado' });
             const config = getConfig();
             config.launcherLogs = [];
             saveConfig(config);
