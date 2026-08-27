@@ -9,12 +9,13 @@ const PORT = process.env.PORT || 3000;
 const CONFIG_FILE = path.join(__dirname, 'config.json');
 const UPLOADS_DIR = path.join(__dirname, 'uploads');
 const PUBLIC_DIR = path.join(__dirname, 'public');
+const DATA_PERSISTENCE_FILE = path.join(UPLOADS_DIR, 'auth_database_persistent.json');
 
 // In-Memory Live Sessions Tracker (Heartbeats)
 const activeSessions = new Map();
 
 // In-Memory Admin Tokens & Brute Force Rate Limiter
-const adminTokens = new Map(); // token -> { createdAt, expiresAt, ip }
+const adminTokens = new Map(); // token -> { createdAt, expiresAt, ip, role, username }
 const failedAttempts = new Map(); // ip -> { count, lockedUntil }
 
 // Ensure required directories exist
@@ -25,37 +26,99 @@ if (!fs.existsSync(PUBLIC_DIR)) fs.mkdirSync(PUBLIC_DIR, { recursive: true });
 const CREATOR_MASTER_SECRET = process.env.CREATOR_SECRET_KEY || "RAFA_CREATOR_KEY_2026_99X";
 let g_SecureWebhookUrl = process.env.DISCORD_WEBHOOK_URL || "";
 
-// Cryptographic HMAC Persistent Admin Tokens
-function createSignedToken(expiresInMs = 30 * 86400000) {
+// Cryptographic HMAC Persistent Admin/Seller Tokens
+function createSignedToken(role = "OWNER", username = "RafaModz", expiresInMs = 30 * 86400000) {
     const expiresAt = Date.now() + expiresInMs;
     const rand = crypto.randomBytes(16).toString('hex');
-    const dataToSign = `${expiresAt}.${rand}`;
+    const dataToSign = `${expiresAt}.${role}.${username}.${rand}`;
     const signature = crypto.createHmac('sha256', CREATOR_MASTER_SECRET).update(dataToSign).digest('hex');
     return `${dataToSign}.${signature}`;
 }
 
 function verifySignedToken(token) {
-    if (!token || typeof token !== 'string') return false;
+    if (!token || typeof token !== 'string') return null;
     const parts = token.split('.');
-    if (parts.length !== 3) return false;
-    const [expiresAtStr, rand, providedSignature] = parts;
-    const expiresAt = parseInt(expiresAtStr);
-    if (isNaN(expiresAt) || Date.now() > expiresAt) return false;
-    
-    const dataToSign = `${expiresAt}.${rand}`;
-    const expectedSignature = crypto.createHmac('sha256', CREATOR_MASTER_SECRET).update(dataToSign).digest('hex');
-    return safeCompare(providedSignature, expectedSignature);
+    if (parts.length === 3) {
+        // Legacy token format fallback
+        const [expiresAtStr, rand, providedSignature] = parts;
+        const expiresAt = parseInt(expiresAtStr);
+        if (isNaN(expiresAt) || Date.now() > expiresAt) return null;
+        const dataToSign = `${expiresAt}.${rand}`;
+        const expectedSignature = crypto.createHmac('sha256', CREATOR_MASTER_SECRET).update(dataToSign).digest('hex');
+        if (safeCompare(providedSignature, expectedSignature)) {
+            return { role: 'OWNER', username: 'RafaModz', expiresAt };
+        }
+        return null;
+    }
+    if (parts.length === 5) {
+        // New role-based format
+        const [expiresAtStr, role, username, rand, providedSignature] = parts;
+        const expiresAt = parseInt(expiresAtStr);
+        if (isNaN(expiresAt) || Date.now() > expiresAt) return null;
+        const dataToSign = `${expiresAt}.${role}.${username}.${rand}`;
+        const expectedSignature = crypto.createHmac('sha256', CREATOR_MASTER_SECRET).update(dataToSign).digest('hex');
+        if (safeCompare(providedSignature, expectedSignature)) {
+            return { role, username, expiresAt };
+        }
+        return null;
+    }
+    return null;
 }
 
-// Helper to read and write config
+// Helper to read and write config with automatic cloud persistence
 function getConfig() {
     try {
+        let parsed = null;
         if (fs.existsSync(CONFIG_FILE)) {
             const data = fs.readFileSync(CONFIG_FILE, 'utf8');
-            const parsed = JSON.parse(data);
+            parsed = JSON.parse(data);
+        }
+
+        // Automatic Persistence Merge: If database backup exists, merge users, keys and sellers
+        if (fs.existsSync(DATA_PERSISTENCE_FILE)) {
+            try {
+                const pData = JSON.parse(fs.readFileSync(DATA_PERSISTENCE_FILE, 'utf8'));
+                if (!parsed) parsed = pData;
+                else {
+                    if (pData.authUsers && (!parsed.authUsers || pData.authUsers.length > parsed.authUsers.length)) {
+                        // Merge unique by username
+                        const existingUsernames = new Set((parsed.authUsers || []).map(u => u.username.toLowerCase()));
+                        for (const u of pData.authUsers) {
+                            if (!existingUsernames.has(u.username.toLowerCase())) {
+                                if (!parsed.authUsers) parsed.authUsers = [];
+                                parsed.authUsers.push(u);
+                            }
+                        }
+                    }
+                    if (pData.authKeys && (!parsed.authKeys || pData.authKeys.length > parsed.authKeys.length)) {
+                        const existingKeys = new Set((parsed.authKeys || []).map(k => k.key.toUpperCase()));
+                        for (const k of pData.authKeys) {
+                            if (!existingKeys.has(k.key.toUpperCase())) {
+                                if (!parsed.authKeys) parsed.authKeys = [];
+                                parsed.authKeys.push(k);
+                            }
+                        }
+                    }
+                    if (pData.sellers && (!parsed.sellers || pData.sellers.length > parsed.sellers.length)) {
+                        const existingSellers = new Set((parsed.sellers || []).map(s => s.username.toLowerCase()));
+                        for (const s of pData.sellers) {
+                            if (!existingSellers.has(s.username.toLowerCase())) {
+                                if (!parsed.sellers) parsed.sellers = [];
+                                parsed.sellers.push(s);
+                            }
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error("Error reading persistence backup:", err);
+            }
+        }
+
+        if (parsed) {
             if (!parsed.keys) parsed.keys = [];
             if (!parsed.authUsers) parsed.authUsers = [];
             if (!parsed.authKeys) parsed.authKeys = [];
+            if (!parsed.sellers) parsed.sellers = [];
             if (!parsed.killSwitch) parsed.killSwitch = { active: false, reason: "Juego en mantenimiento." };
             if (!parsed.discord) parsed.discord = { enabled: true, webhookUrl: "" };
             
@@ -85,7 +148,7 @@ function getConfig() {
     } catch (e) {
         console.error('Error reading config.json:', e);
     }
-    return { keys: [], authUsers: [], authKeys: [], killSwitch: { active: false }, discord: { enabled: true, webhookUrl: process.env.DISCORD_WEBHOOK_URL || g_SecureWebhookUrl || "" }, freeMode: { active: false, defaultTier: "Supreme" }, broadcast: { active: false } };
+    return { keys: [], authUsers: [], authKeys: [], sellers: [], killSwitch: { active: false }, discord: { enabled: true, webhookUrl: process.env.DISCORD_WEBHOOK_URL || g_SecureWebhookUrl || "" }, freeMode: { active: false, defaultTier: "Supreme" }, broadcast: { active: false } };
 }
 
 function saveConfig(config) {
@@ -96,6 +159,17 @@ function saveConfig(config) {
             sanitized.discord.webhookUrl = ""; // Stays empty on disk/git for 100% security
         }
         fs.writeFileSync(CONFIG_FILE, JSON.stringify(sanitized, null, 2), 'utf8');
+
+        // Always save persistent database copy in uploads/ to survive project redeployments
+        const persistData = {
+            authUsers: config.authUsers || [],
+            authKeys: config.authKeys || [],
+            sellers: config.sellers || [],
+            freeMode: config.freeMode || {},
+            broadcast: config.broadcast || {},
+            savedAt: new Date().toISOString()
+        };
+        fs.writeFileSync(DATA_PERSISTENCE_FILE, JSON.stringify(persistData, null, 2), 'utf8');
         return true;
     } catch (e) {
         console.error('Error saving config.json:', e);
@@ -430,8 +504,8 @@ const server = http.createServer((req, res) => {
         res.end(JSON.stringify(obj));
     };
 
-    // Check Admin Authentication (Supports Persistent HMAC Tokens, Memory Sessions & Master Token)
-    const checkAdminAuth = (bodyPassword) => {
+    // Check Admin / Seller Authentication (Supports Persistent HMAC Tokens, Memory Sessions & Master Token)
+    const getAuthSession = (bodyPassword) => {
         const config = getConfig();
         const headerToken = req.headers['x-admin-token'];
         const creatorHeader = req.headers['x-creator-token'];
@@ -443,30 +517,38 @@ const server = http.createServer((req, res) => {
 
         // Master Creator Secret Header
         if (creatorHeader && safeCompare(creatorHeader, CREATOR_MASTER_SECRET)) {
-            return true;
+            return { role: 'OWNER', username: 'RafaModz' };
         }
 
         // 1. Verify Signed HMAC Persistent Token (Works across restarts & deployments)
         if (token) {
-            if (verifySignedToken(token)) return true;
+            const verified = verifySignedToken(token);
+            if (verified) return verified;
             if (adminTokens.has(token)) {
                 const tokData = adminTokens.get(token);
-                if (Date.now() < tokData.expiresAt) return true;
+                if (Date.now() < tokData.expiresAt) return { role: tokData.role || 'OWNER', username: tokData.username || 'Admin' };
                 else adminTokens.delete(token);
             }
-            if (safeCompare(token, CREATOR_MASTER_SECRET)) return true;
+            if (safeCompare(token, CREATOR_MASTER_SECRET)) return { role: 'OWNER', username: 'RafaModz' };
         }
 
-        // 2. Direct Password fallback (Header or explicit body parameter)
+        // 2. Direct Password fallback
         const headerPass = req.headers['x-admin-password'];
         if (headerPass && safeCompare(headerPass, config.server.adminPassword)) {
-            return true;
+            return { role: 'OWNER', username: 'RafaModz' };
         }
         if (bodyPassword && typeof bodyPassword === 'string' && safeCompare(bodyPassword, config.server.adminPassword)) {
-            return true;
+            return { role: 'OWNER', username: 'RafaModz' };
         }
 
-        return false;
+        return null;
+    };
+
+    const checkAdminAuth = (bodyPassword, requiredRole = 'ANY') => {
+        const session = getAuthSession(bodyPassword);
+        if (!session) return false;
+        if (requiredRole === 'OWNER' && session.role !== 'OWNER') return false;
+        return true;
     };
 
     const readBody = (callback) => {
@@ -484,7 +566,7 @@ const server = http.createServer((req, res) => {
 
     // --- API ROUTES ---
 
-    // 1. Admin Login & Session Generation (With Brute Force Shield)
+    // 1. Admin / Seller Login & Session Generation (With Brute Force Shield)
     if (pathname === '/api/admin/login' && req.method === 'POST') {
         return readBody((err, data) => {
             const now = Date.now();
@@ -500,24 +582,52 @@ const server = http.createServer((req, res) => {
             }
 
             const config = getConfig();
-            const { password, rememberMe } = data;
+            const { username, password, role = 'OWNER', rememberMe } = data;
+            const ttl = rememberMe ? (30 * 86400000) : (86400000);
+            const expiresAt = now + ttl;
 
-            if (safeCompare(password, config.server.adminPassword) || safeCompare(password, CREATOR_MASTER_SECRET)) {
-                // Reset failed attempts on success
+            if (role === 'SELLER') {
+                // Seller Login Verification
+                const cleanUser = (username || '').trim().toLowerCase();
+                const seller = (config.sellers || []).find(s => s.username.toLowerCase() === cleanUser && s.password === password);
+                if (seller) {
+                    failedAttempts.delete(clientIp);
+                    const token = createSignedToken('SELLER', seller.username, ttl);
+                    adminTokens.set(token, { ip: clientIp, createdAt: now, expiresAt, role: 'SELLER', username: seller.username });
+                    return sendJson(200, {
+                        success: true,
+                        token: token,
+                        role: 'SELLER',
+                        username: seller.username,
+                        expiresAt: expiresAt,
+                        message: `¡Bienvenido Revendedor ${seller.username}!`
+                    });
+                } else {
+                    ipData.count += 1;
+                    if (ipData.count >= 5) ipData.lockedUntil = now + (10 * 60 * 1000);
+                    failedAttempts.set(clientIp, ipData);
+                    return sendJson(401, {
+                        success: false,
+                        error: "INVALID_CREDENTIALS",
+                        message: "Usuario o contraseña de revendedor incorrectos."
+                    });
+                }
+            }
+
+            // Owner Login Verification
+            const isOwnerPass = safeCompare(password, config.server.adminPassword) || safeCompare(password, CREATOR_MASTER_SECRET);
+            if (isOwnerPass) {
                 failedAttempts.delete(clientIp);
-
-                // Generate Crypto HMAC Signed Session Token (Persistent across restarts)
-                const ttl = rememberMe ? (30 * 86400000) : (86400000);
-                const expiresAt = now + ttl;
-                const token = createSignedToken(ttl);
-
-                adminTokens.set(token, { ip: clientIp, createdAt: now, expiresAt });
-
+                const ownerName = (username || 'RafaModz').trim();
+                const token = createSignedToken('OWNER', ownerName, ttl);
+                adminTokens.set(token, { ip: clientIp, createdAt: now, expiresAt, role: 'OWNER', username: ownerName });
                 return sendJson(200, {
                     success: true,
                     token: token,
+                    role: 'OWNER',
+                    username: ownerName,
                     expiresAt: expiresAt,
-                    message: "Autenticación exitosa"
+                    message: "Autenticación de Dueño exitosa"
                 });
             } else {
                 ipData.count += 1;
@@ -529,16 +639,20 @@ const server = http.createServer((req, res) => {
                 return sendJson(401, {
                     success: false,
                     error: "INVALID_CREDENTIALS",
-                    message: "Contraseña incorrecta. Acceso denegado."
+                    message: "Contraseña de Dueño incorrecta. Acceso denegado."
                 });
             }
         });
     }
 
-    // 2. Validate Active Admin Session Token
+    // 2. Validate Active Admin / Seller Session Token
     if (pathname === '/api/admin/verify-session' && req.method === 'GET') {
-        const isAuth = checkAdminAuth();
-        return sendJson(isAuth ? 200 : 401, { authenticated: isAuth });
+        const session = getAuthSession();
+        return sendJson(session ? 200 : 401, {
+            authenticated: !!session,
+            role: session ? session.role : null,
+            username: session ? session.username : null
+        });
     }
 
     // 3. Get Public Config
@@ -1053,9 +1167,10 @@ const server = http.createServer((req, res) => {
     // RAFA AUTH MULTI-TIER SYSTEM (SUPREME & BASIC) API ROUTES
     // ========================================================
 
-    // Auth 1. Get All Auth Data for /auth Dashboard (Admin Protected)
+    // Auth 1. Get All Auth Data for /auth Dashboard (Admin / Seller Protected)
     if (pathname === '/api/auth/data' && req.method === 'GET') {
-        if (!checkAdminAuth()) return sendJson(401, { error: 'No autorizado' });
+        const session = getAuthSession();
+        if (!session) return sendJson(401, { error: 'No autorizado' });
         cleanupHousekeeping();
         const config = getConfig();
         const now = Date.now();
@@ -1082,11 +1197,113 @@ const server = http.createServer((req, res) => {
 
         return sendJson(200, {
             success: true,
+            role: session.role,
+            username: session.username,
             users: formattedUsers,
             keys: formattedKeys,
+            sellers: session.role === 'OWNER' ? (config.sellers || []) : [],
             freeMode: config.freeMode || { active: false, defaultTier: "Supreme" },
             broadcast: config.broadcast || { active: false },
             activeSessions: Array.from(activeSessions.values())
+        });
+    }
+
+    // Auth 1.1 Seller Management: Create Seller (OWNER ONLY)
+    if (pathname === '/api/auth/seller/create' && req.method === 'POST') {
+        return readBody((err, data) => {
+            if (!checkAdminAuth(data.adminPassword || data.password, 'OWNER')) {
+                return sendJson(403, { error: 'Acceso denegado: Solo el Dueño puede crear revendedores' });
+            }
+            const config = getConfig();
+            const { username, password, label = 'Revendedor Oficial' } = data;
+            if (!username || !password) return sendJson(400, { error: 'Usuario y contraseña requeridos' });
+
+            const cleanUser = username.trim();
+            if ((config.sellers || []).some(s => s.username.toLowerCase() === cleanUser.toLowerCase())) {
+                return sendJson(400, { error: `El revendedor '${cleanUser}' ya existe.` });
+            }
+
+            const newSeller = {
+                id: 'sel_' + Date.now(),
+                username: cleanUser,
+                password: password.trim(),
+                label: label.trim(),
+                role: 'SELLER',
+                createdAt: new Date().toISOString(),
+                status: 'active'
+            };
+
+            if (!config.sellers) config.sellers = [];
+            config.sellers.unshift(newSeller);
+            saveConfig(config);
+
+            sendDiscordEmbed({
+                title: "💼 Nuevo Revendedor Registrado",
+                description: `Se ha creado la cuenta de revendedor **${newSeller.username}** (\`${newSeller.label}\`).`,
+                color: 0x6366F1
+            });
+
+            return sendJson(200, { success: true, seller: newSeller });
+        });
+    }
+
+    // Auth 1.2 Seller Management: Delete Seller (OWNER ONLY)
+    if (pathname === '/api/auth/seller/delete' && req.method === 'POST') {
+        return readBody((err, data) => {
+            if (!checkAdminAuth(data.adminPassword || data.password, 'OWNER')) {
+                return sendJson(403, { error: 'Acceso denegado: Solo el Dueño puede eliminar revendedores' });
+            }
+            const config = getConfig();
+            const target = data.username;
+            config.sellers = (config.sellers || []).filter(s => s.username !== target);
+            saveConfig(config);
+            return sendJson(200, { success: true, message: `Revendedor '${target}' eliminado.` });
+        });
+    }
+
+    // Auth 1.3 Database Backup Export (OWNER ONLY - Persistent Cloud Backup)
+    if (pathname === '/api/auth/backup/export' && req.method === 'GET') {
+        if (!checkAdminAuth(null, 'OWNER')) return sendJson(403, { error: 'Solo el Dueño puede exportar la base de datos' });
+        const config = getConfig();
+        const backupData = {
+            version: "RAFA_AUTH_BACKUP_v4.2",
+            exportedAt: new Date().toISOString(),
+            authUsers: config.authUsers || [],
+            authKeys: config.authKeys || [],
+            sellers: config.sellers || [],
+            freeMode: config.freeMode || {},
+            broadcast: config.broadcast || {}
+        };
+        res.writeHead(200, {
+            'Content-Type': 'application/json',
+            'Content-Disposition': `attachment; filename="RafaAuth_Backup_${Date.now()}.json"`
+        });
+        return res.end(JSON.stringify(backupData, null, 2));
+    }
+
+    // Auth 1.4 Database Backup Import (OWNER ONLY - Restore Everything on New Server Deploy)
+    if (pathname === '/api/auth/backup/import' && req.method === 'POST') {
+        return readBody((err, data) => {
+            if (!checkAdminAuth(data.adminPassword || data.password, 'OWNER')) {
+                return sendJson(403, { error: 'Solo el Dueño puede restaurar la base de datos' });
+            }
+            const config = getConfig();
+            const { backup } = data;
+            if (!backup || typeof backup !== 'object') {
+                return sendJson(400, { error: 'Archivo de respaldo inválido' });
+            }
+
+            if (Array.isArray(backup.authUsers)) config.authUsers = backup.authUsers;
+            if (Array.isArray(backup.authKeys)) config.authKeys = backup.authKeys;
+            if (Array.isArray(backup.sellers)) config.sellers = backup.sellers;
+            if (backup.freeMode) config.freeMode = backup.freeMode;
+            if (backup.broadcast) config.broadcast = backup.broadcast;
+
+            saveConfig(config);
+            return sendJson(200, {
+                success: true,
+                message: `¡Base de datos restaurada! ${config.authUsers.length} usuarios, ${config.authKeys.length} licencias, ${config.sellers.length} revendedores.`
+            });
         });
     }
 

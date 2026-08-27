@@ -3,541 +3,598 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RAFA AUTH - Centro de Control de Cuentas & Suscripciones</title>
-  <meta name="description" content="Portal de gestión de cuentas, suscripciones Supreme/Basic, modo gratis y alertas para RafaPanel.">
+  <title>RAFA AUTH - Control Center</title>
+  <meta name="description" content="Centro de control RAFA AUTH estilo Control Center para gestión de usuarios, licencias Supreme/Básicas y telemetría en la nube.">
   <link rel="stylesheet" href="style.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body>
+<body class="rf-body">
 
-  <!-- Top Navbar -->
-  <header class="navbar">
-    <a href="/auth" class="brand">
-      <div class="brand-logo" style="background: linear-gradient(135deg, #a855f7, #00e5ff);">🛡️</div>
-      <div class="brand-info">
-        <h1>RAFA AUTH</h1>
-        <span style="color: #a855f7; font-weight: 700; font-size: 0.75rem;">SISTEMA MULTISUSCRIPCIÓN SUPREME & BASIC</span>
+  <!-- ======================================================== -->
+  <!-- LOGIN VIEW (KEYAUTH MODAL)                               -->
+  <!-- ======================================================== -->
+  <div id="authLoginModal" class="ka-login-container" style="position: fixed; inset: 0; z-index: 999; background: radial-gradient(circle at 50% 40%, #161c2c 0%, #080a10 75%); display: flex;">
+    <div class="ka-login-card">
+      <div class="ka-login-logo">
+        RAFA<span>AUTH</span>
       </div>
-    </a>
-    <div class="nav-links">
-      <div id="freeModeNavBadge" class="badge-hwid" style="background: rgba(239, 68, 68, 0.15); border-color: #ef4444; color: #ef4444; font-weight: 700; display: none;">
-        🔓 PANEL GRATIS ACTIVO
-      </div>
-      <span id="sessionStatus" style="font-size: 0.85rem; color: var(--success); font-weight: 600; display: flex; align-items: center; gap: 0.4rem;">
-        <span class="status-dot" style="background: var(--success);"></span> Sesión Segura
-      </span>
-      <a href="/admin" class="nav-btn nav-btn-admin">⚙️ Panel Admin</a>
-      <a href="/" target="_blank" class="nav-btn nav-btn-admin">🌐 Portal Web</a>
-      <button onclick="logoutAuthAdmin()" class="nav-btn nav-btn-admin" style="color: #ef4444; border-color: rgba(239, 68, 68, 0.4);">🚪 Salir</button>
-    </div>
-  </header>
+      <p class="ka-login-subtitle">
+        Panel de Control & Autenticación Cloud
+      </p>
 
-  <!-- Login Modal Overlay -->
-  <div id="authLoginModal" class="login-overlay">
-    <div class="glass-panel login-card">
-      <div class="login-header">
-        <div class="brand-logo" style="margin: 0 auto 1rem auto; width: 56px; height: 56px; font-size: 1.8rem; background: linear-gradient(135deg, #a855f7, #00e5ff);">🛡️</div>
-        <h2>Acceso a RAFA AUTH</h2>
-        <p>Introduce tu contraseña de administrador para gestionar usuarios, suscripciones Supreme y modo gratis.</p>
-      </div>
       <form id="authLoginForm" onsubmit="handleAuthLogin(event)">
-        <div class="form-group">
-          <label>Contraseña de Administrador:</label>
-          <input type="password" id="authPasswordInput" class="form-control" placeholder="••••••••" required autofocus>
+        <div class="ka-input-wrap">
+          <label class="ka-input-label">Usuario</label>
+          <input type="text" id="authUsernameInput" class="ka-input" placeholder="Rafa Admin" value="Rafa Admin" required autocomplete="username">
         </div>
-        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.25rem;">
-          <input type="checkbox" id="authRememberMe" checked style="width: 16px; height: 16px; cursor: pointer; accent-color: #a855f7;">
-          <label for="authRememberMe" style="font-size: 0.85rem; color: var(--text-muted); cursor: pointer; margin: 0;">
-            💾 Recordar contraseña (Guardar sesión segura)
+
+        <div class="ka-input-wrap" style="margin-bottom: 0.5rem;">
+          <label class="ka-input-label">Contraseña</label>
+          <input type="password" id="authPasswordInput" class="ka-input" placeholder="••••••••••••" required autocomplete="current-password" autofocus>
+        </div>
+
+        <div class="ka-input-wrap" style="margin-top: 1rem;">
+          <label class="ka-input-label">Tipo de Rol / Acceso</label>
+          <select id="authRoleSelect" class="ka-select" onchange="toggleRoleHint(this.value)">
+            <option value="OWNER" selected>👑 OWNER (Acceso Total & Panel Safe Completo)</option>
+            <option value="SELLER">💼 SELLER (Revendedor - Crear Usuarios y Keys)</option>
+          </select>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 0.4rem; margin-bottom: 1rem; text-align: left;">
+          <input type="checkbox" id="authRememberMe" checked style="width: 14px; height: 14px; accent-color: #7c3aed; cursor: pointer;">
+          <label for="authRememberMe" style="font-size: 0.76rem; color: #94a3b8; cursor: pointer; margin: 0;">
+            Recordar sesión permanente
           </label>
         </div>
-        <button type="submit" class="btn-submit" style="background: linear-gradient(135deg, #a855f7, #00e5ff);">Ingresar al Centro AUTH ➔</button>
-        <p id="authLoginError" style="color: var(--danger); font-size: 0.85rem; margin-top: 1rem; text-align: center; display: none;">Contraseña incorrecta. Inténtalo de nuevo.</p>
+
+        <button type="submit" class="rf-btn-purple-primary" style="width: 100%; justify-content: center; height: 40px;">
+          Iniciar Sesión ➔
+        </button>
+
+        <p id="authLoginError" style="color: #ef4444; font-size: 0.78rem; margin-top: 0.75rem; display: none;">Credenciales incorrectas.</p>
       </form>
     </div>
   </div>
 
-  <!-- Modal: Crear Nuevo Usuario (Username + Password + Suscripción) -->
-  <div id="createUserModal" class="modal-overlay">
-    <div class="modal-card" style="max-width: 520px; border-color: #a855f7; box-shadow: 0 0 35px rgba(168, 85, 247, 0.35);">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-        <h3 style="color: #a855f7; font-size: 1.3rem;">👥 Crear Usuario (User + Password)</h3>
-        <button onclick="closeCreateUserModal()" style="background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer;">&times;</button>
-      </div>
-      <form onsubmit="submitCreateUser(event)">
-        <div class="form-group">
-          <label>Nombre de Usuario (Username):</label>
-          <input type="text" id="newUsernameInput" class="form-control" placeholder="Ej: JuanPerez2026" required autocomplete="off">
-        </div>
-        <div class="form-group">
-          <label>Contraseña (Password):</label>
-          <input type="text" id="newUserPasswordInput" class="form-control" placeholder="Ej: Clave123*" required autocomplete="off">
-        </div>
-        <div class="form-group">
-          <label>Nivel de Suscripción:</label>
-          <select id="newUserSubscriptionSelect" class="form-control" style="font-weight: 700;">
-            <option value="Supreme" selected>👑 SUPREME VIP (Acceso Total a Todos los Módulos)</option>
-            <option value="Basico">⭐ BÁSICO (Funciones Esenciales)</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Duración de la Cuenta:</label>
-          <select id="newUserDurationSelect" class="form-control" onchange="toggleUserCustomDays(this.value)">
-            <option value="1d">1 Día (Pase Diario)</option>
-            <option value="7d">7 Días (Semanal)</option>
-            <option value="30d" selected>30 Días (Mensual)</option>
-            <option value="lifetime">Permanente / Lifetime VIP</option>
-            <option value="custom">Días Personalizados...</option>
-          </select>
-        </div>
-        <div class="form-group" id="userCustomDaysGroup" style="display: none;">
-          <label>Cantidad de Días:</label>
-          <input type="number" id="userCustomDays" class="form-control" min="1" max="365" value="15">
-        </div>
-        <div class="form-group">
-          <label>Nota / Etiqueta de Cliente (Opcional):</label>
-          <input type="text" id="newUserLabelInput" class="form-control" placeholder="Ej: Cliente Discord / Torneo">
-        </div>
-        <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
-          <button type="button" onclick="closeCreateUserModal()" class="btn-cancel" style="flex: 1;">Cancelar</button>
-          <button type="submit" class="btn-submit" style="flex: 2; background: linear-gradient(135deg, #a855f7, #00e5ff);">Crear Usuario ➔</button>
-        </div>
-      </form>
-    </div>
-  </div>
+  <!-- ======================================================== -->
+  <!-- MAIN LAYOUT (EXACT SCREENSHOT REPLICA)                   -->
+  <!-- ======================================================== -->
+  <div class="rf-layout" id="authMainApp" style="display: none;">
 
-  <!-- Modal: Generar Licencias (Keys) -->
-  <div id="generateAuthKeysModal" class="modal-overlay">
-    <div class="modal-card" style="max-width: 500px; border-color: var(--primary);">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-        <h3 style="color: var(--primary); font-size: 1.3rem;">🔑 Generar Licencias Directas</h3>
-        <button onclick="closeGenerateAuthKeysModal()" style="background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer;">&times;</button>
-      </div>
-      <form onsubmit="submitGenerateAuthKeys(event)">
-        <div class="form-group">
-          <label>Nivel de Suscripción de la Clave:</label>
-          <select id="keyAuthSubSelect" class="form-control" style="font-weight: 700;">
-            <option value="Supreme" selected>👑 SUPREME VIP (Completa)</option>
-            <option value="Basico">⭐ BÁSICO</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Duración:</label>
-          <select id="keyAuthDurSelect" class="form-control" onchange="toggleKeyAuthCustomDays(this.value)">
-            <option value="1d">1 Día</option>
-            <option value="7d">7 Días</option>
-            <option value="30d" selected>30 Días</option>
-            <option value="lifetime">Permanente / Lifetime</option>
-            <option value="custom">Días Personalizados...</option>
-          </select>
-        </div>
-        <div class="form-group" id="keyAuthCustomDaysGroup" style="display: none;">
-          <label>Cantidad de Días:</label>
-          <input type="number" id="keyAuthCustomDays" class="form-control" min="1" max="365" value="15">
-        </div>
-        <div class="form-group">
-          <label>Cantidad de Claves a Generar:</label>
-          <input type="number" id="keyAuthCountInput" class="form-control" min="1" max="50" value="1">
-        </div>
-        <div class="form-group">
-          <label>Etiqueta / Cliente:</label>
-          <input type="text" id="keyAuthLabelInput" class="form-control" placeholder="Ej: Lote Clientes" value="Licencia VIP">
-        </div>
-        <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
-          <button type="button" onclick="closeGenerateAuthKeysModal()" class="btn-cancel" style="flex: 1;">Cancelar</button>
-          <button type="submit" class="btn-submit" style="flex: 2;">Generar Claves ➔</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Main Layout -->
-  <div class="admin-layout" id="authMainApp" style="display: none;">
-
-    <!-- Sidebar -->
-    <aside class="admin-sidebar">
-      <div class="app-selector-box" style="border-color: #a855f7;">
-        <label style="color: #a855f7;">CENTRO DE AUTENTICACIÓN:</label>
-        <div style="font-weight: 800; font-size: 1rem; color: #fff; display: flex; align-items: center; gap: 0.5rem; margin-top: 0.2rem;">
-          <span>🛡️</span> RAFA AUTH PANEL
+    <!-- Sidebar Exact Replica -->
+    <aside class="rf-sidebar">
+      <!-- Brand Header -->
+      <div class="rf-brand">
+        <div class="rf-brand-logo">🛡️</div>
+        <div class="rf-brand-info">
+          <h1>RAFA AUTH</h1>
+          <span>CONTROL CENTER</span>
         </div>
       </div>
 
-      <div class="sidebar-tabs">
-        <button class="sidebar-tab-btn active" data-tab="tab_users" onclick="switchAuthTab('tab_users')">
-          <span>👥</span> Usuarios (User + Pass)
+      <!-- Main Navigation Menu -->
+      <button class="rf-nav-btn active" data-tab="tab_dashboard" onclick="switchAuthTab('tab_dashboard')">
+        <span class="icon">📊</span> Dashboard
+      </button>
+
+      <div class="rf-nav-category">USUARIOS</div>
+      <button class="rf-nav-btn" data-tab="tab_users" onclick="switchAuthTab('tab_users')">
+        <span class="icon">👥</span> Usuarios
+      </button>
+
+      <div class="rf-nav-category">ACCESOS</div>
+      <button class="rf-nav-btn" data-tab="tab_keys" onclick="switchAuthTab('tab_keys')">
+        <span class="icon">🗝️</span> Generar Licencia
+      </button>
+      <button class="rf-nav-btn" data-tab="tab_subscriptions" onclick="switchAuthTab('tab_subscriptions')">
+        <span class="icon">💎</span> Suscripciones
+      </button>
+      <button class="rf-nav-btn" data-tab="tab_freemode" onclick="switchAuthTab('tab_freemode')">
+        <span class="icon">🔓</span> Modo Panel Gratis
+      </button>
+
+      <div class="rf-nav-category">SISTEMA</div>
+      <button class="rf-nav-btn" data-tab="tab_broadcast" onclick="switchAuthTab('tab_broadcast')">
+        <span class="icon">💬</span> Mensajes
+      </button>
+      <button class="rf-nav-btn" data-tab="tab_telemetry" onclick="switchAuthTab('tab_telemetry')">
+        <span class="icon">⚡</span> Telemetría de Clientes
+      </button>
+
+      <!-- Owner Only Submenu -->
+      <div id="ownerOnlyNavSection">
+        <button class="rf-nav-btn" data-tab="tab_sellers" onclick="switchAuthTab('tab_sellers')">
+          <span class="icon">💼</span> Revendedores (Sellers)
         </button>
-        <button class="sidebar-tab-btn" data-tab="tab_keys" onclick="switchAuthTab('tab_keys')">
-          <span>🔑</span> Generador de Licencias
+        <button class="rf-nav-btn" data-tab="tab_backup" onclick="switchAuthTab('tab_backup')">
+          <span class="icon">💾</span> Backup & Cloud Sync
         </button>
-        <button class="sidebar-tab-btn" data-tab="tab_subscriptions" onclick="switchAuthTab('tab_subscriptions')">
-          <span>💎</span> Suscripciones (Supreme / Basic)
-        </button>
-        <button class="sidebar-tab-btn" data-tab="tab_freemode" onclick="switchAuthTab('tab_freemode')">
-          <span>🔓</span> Modo Panel Gratis
-        </button>
-        <button class="sidebar-tab-btn" data-tab="tab_broadcast" onclick="switchAuthTab('tab_broadcast')">
-          <span>📢</span> Mensajes en Tiempo Real
-        </button>
-        <button class="sidebar-tab-btn" data-tab="tab_telemetry" onclick="switchAuthTab('tab_telemetry')">
-          <span>⚡</span> Telemetría de Clientes
+        <button class="rf-nav-btn" onclick="window.location.href='/admin'">
+          <span class="icon">⚙️</span> Configuración (Safe)
         </button>
       </div>
 
-      <div style="margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--border-color);">
-        <p style="font-size: 0.8rem; color: var(--text-dim); text-align: center;">
-          RAFA AUTH SYSTEM 2026<br><span style="color: #a855f7; font-weight: 700;">Multi-Tier & Cloud Sync</span>
-        </p>
+      <!-- Bottom Profile Card -->
+      <div class="rf-user-card" onclick="logoutAuthAdmin()" title="Cerrar Sesión">
+        <div class="rf-user-avatar">👤</div>
+        <div class="rf-user-info">
+          <span class="rf-user-name" id="navUserName">Rafa Admin</span>
+          <span class="rf-user-role" id="navUserRole">Administrador</span>
+        </div>
+        <div class="rf-online-dot"></div>
       </div>
     </aside>
 
-    <!-- Main Content Area -->
-    <main class="admin-main">
+    <!-- Main Content Canvas -->
+    <main class="rf-main">
+
+      <!-- Top Actions Bar -->
+      <div class="rf-top-actions">
+        <div class="rf-status-pill">
+          <div class="rf-online-dot"></div>
+          SISTEMA ONLINE
+        </div>
+        <a href="/" target="_blank" class="rf-top-btn">
+          <span>⚙️</span> Portal Web
+        </a>
+        <button class="rf-top-btn" onclick="showAuthToast('No hay alertas nuevas')" title="Notificaciones">
+          🔔
+        </button>
+        <button class="rf-top-btn" onclick="logoutAuthAdmin()" title="Cerrar Sesión" style="color: #f87171;">
+          🚪 Salir
+        </button>
+      </div>
 
       <!-- ======================================================== -->
-      <!-- TAB 1: GESTIÓN DE USUARIOS (USER + PASSWORD)             -->
+      <!-- TAB 1: DASHBOARD (EXACT TOP IMAGE)                       -->
       <!-- ======================================================== -->
-      <section id="tab-tab_users" class="tab-pane active">
-        <div class="workspace-top-bar">
-          <div>
-            <h3 style="font-size: 1.35rem; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
-              <span>👥</span> Cuentas de Usuario (Username & Password)
-            </h3>
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem;">
-              Crea usuarios con credenciales fijas, asigna suscripción <b>Supreme</b> o <b>Básica</b>, monitorea el HWID vinculado y gestiona días de acceso.
-            </p>
-          </div>
-          <button onclick="openCreateUserModal()" class="btn-primary-large" style="background: linear-gradient(135deg, #a855f7, #7c3aed); box-shadow: 0 0 25px rgba(168, 85, 247, 0.4); padding: 0.75rem 1.5rem; font-size: 0.95rem;">
-            + Crear Nuevo Usuario
-          </button>
-        </div>
+      <section id="tab-tab_dashboard" class="tab-pane active">
+        
+        <!-- Welcome Title -->
+        <h2 class="rf-welcome-title">¡Bienvenido de vuelta, Rafa!</h2>
+        <p class="rf-welcome-sub">Aquí tienes un resumen general del sistema.</p>
 
-        <div class="metrics-grid" style="margin: 1.5rem 0;">
-          <div class="metric-card">
-            <div class="metric-num" id="statTotalUsers" style="color: #a855f7;">0</div>
-            <div class="metric-label">Usuarios Totales Registrados</div>
-          </div>
-          <div class="metric-card">
-            <div class="metric-num" id="statSupremeUsers" style="color: #fbbf24;">0</div>
-            <div class="metric-label">Usuarios SUPREME VIP 👑</div>
-          </div>
-          <div class="metric-card">
-            <div class="metric-num" id="statBasicUsers" style="color: var(--primary);">0</div>
-            <div class="metric-label">Usuarios BÁSICO ⭐</div>
-          </div>
-          <div class="metric-card">
-            <div class="metric-num" id="statActiveOnlineUsers" style="color: var(--success);">0</div>
-            <div class="metric-label">Conectados en Vivo</div>
-          </div>
-        </div>
-
-        <div class="glass-panel">
-          <div style="padding: 1.25rem 1.5rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; border-bottom: 1px solid var(--border-color); flex-wrap: wrap;">
-            <input type="text" id="searchUserInput" oninput="filterUsersTable()" placeholder="🔍 Buscar por usuario, contraseña o HWID..." class="form-control" style="max-width: 380px;">
-            <div style="display: flex; gap: 0.5rem;">
-              <button class="btn-action" onclick="filterUserTier('ALL')" id="filterTierAll" style="color: var(--primary); border-color: var(--primary); background: rgba(0,229,255,0.15);">Todos</button>
-              <button class="btn-action" onclick="filterUserTier('Supreme')" id="filterTierSupreme">👑 Supreme</button>
-              <button class="btn-action" onclick="filterUserTier('Basico')" id="filterTierBasic">⭐ Básico</button>
-              <button onclick="loadAuthData()" class="btn-action" style="color: var(--success); border-color: var(--success);" title="Refrescar">🔄 Refrescar</button>
-            </div>
-          </div>
-          <div style="overflow-x: auto;">
-            <table class="dll-table">
-              <thead>
-                <tr>
-                  <th>Usuario (Username)</th>
-                  <th>Contraseña</th>
-                  <th>Suscripción</th>
-                  <th>Tiempo Restante</th>
-                  <th>HWID Vinculado</th>
-                  <th>Estado</th>
-                  <th style="text-align: right;">Acciones</th>
-                </tr>
-              </thead>
-              <tbody id="usersTableBody">
-                <tr><td colspan="7" style="text-align: center; color: var(--text-dim); padding: 2rem;">Cargando usuarios...</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <!-- ======================================================== -->
-      <!-- TAB 2: GENERADOR DE LICENCIAS (KEYS)                     -->
-      <!-- ======================================================== -->
-      <section id="tab-tab_keys" class="tab-pane">
-        <div class="workspace-top-bar">
-          <div>
-            <h3 style="font-size: 1.35rem; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
-              <span>🔑</span> Generador y Gestor de Licencias (Keys)
-            </h3>
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem;">
-              Genera tokens de activación rápida vinculados automáticamente al nivel <b>Supreme</b> o <b>Básico</b>.
-            </p>
-          </div>
-          <button onclick="openGenerateAuthKeysModal()" class="btn-primary-large" style="padding: 0.75rem 1.5rem; font-size: 0.95rem;">
-            + Generar Licencias
-          </button>
-        </div>
-
-        <div class="glass-panel" style="margin-top: 1.5rem;">
-          <div style="padding: 1.25rem 1.5rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; border-bottom: 1px solid var(--border-color); flex-wrap: wrap;">
-            <input type="text" id="searchAuthKeyInput" oninput="filterAuthKeysTable()" placeholder="🔍 Buscar licencia o cliente..." class="form-control" style="max-width: 380px;">
-            <button onclick="loadAuthData()" class="btn-action" style="color: var(--success); border-color: var(--success);" title="Refrescar">🔄 Refrescar</button>
-          </div>
-          <div style="overflow-x: auto;">
-            <table class="dll-table">
-              <thead>
-                <tr>
-                  <th>Clave de Acceso</th>
-                  <th>Nivel Suscripción</th>
-                  <th>Cliente / Etiqueta</th>
-                  <th>Tiempo Restante</th>
-                  <th>HWID Vinculado</th>
-                  <th>Estado</th>
-                  <th style="text-align: right;">Acciones</th>
-                </tr>
-              </thead>
-              <tbody id="authKeysTableBody">
-                <tr><td colspan="7" style="text-align: center; color: var(--text-dim); padding: 2rem;">Cargando licencias...</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <!-- ======================================================== -->
-      <!-- TAB 3: SUSCRIPCIONES (SUPREME VS BASIC)                   -->
-      <!-- ======================================================== -->
-      <section id="tab-tab_subscriptions" class="tab-pane">
-        <div class="section-title">
-          <div>
-            <h3 style="font-size: 1.35rem; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
-              <span>💎</span> Configuración de Suscripciones: Supreme & Basic
-            </h3>
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem;">
-              El panel cuenta con dos niveles de acceso. Aquí puedes ver la distribución y las características de cada plan.
-            </p>
-          </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+        <!-- 4 Metric Cards Exact Replica -->
+        <div class="rf-stats-grid">
           
-          <!-- Plan Supreme -->
-          <div class="glass-panel" style="border: 2px solid #fbbf24; box-shadow: 0 0 35px rgba(251, 191, 36, 0.2); padding: 2rem; position: relative; overflow: hidden;">
-            <div style="position: absolute; top: 1rem; right: 1rem; background: rgba(251, 191, 36, 0.2); color: #fbbf24; border: 1px solid #fbbf24; padding: 0.25rem 0.75rem; border-radius: var(--radius-full); font-size: 0.75rem; font-weight: 800;">
-              PLAN MÁS VENDIDO
-            </div>
-            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">👑</div>
-            <h4 style="font-size: 1.5rem; color: #fbbf24; font-weight: 900;">SUPREME VIP</h4>
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.3rem;">Acceso total ilimitado a todas las 42 funciones y bypass de memoria.</p>
-            
-            <ul style="list-style: none; margin: 1.5rem 0; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.9rem; color: var(--text-main);">
-              <li>✔ <b>Aimbot 100% Rage & Silent Aim Inaudible</b></li>
-              <li>✔ <b>Visuales ESP Esqueleto, Cajas 3D, Radar, Alertas</b></li>
-              <li>✔ <b>Exploits: WinDivert FakeLag, Multiplicador de Velocidad</b></li>
-              <li>✔ <b>Bypass Anti-Cheat en Memoria & HWID Spoofer</b></li>
-              <li>✔ <b>Prioridad 24/7 en Servidor de Inyección</b></li>
-            </ul>
-            <div style="padding-top: 1rem; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
-              <span style="color: var(--text-muted); font-size: 0.85rem;">Usuarios Activos:</span>
-              <b id="subSupremeCount" style="color: #fbbf24; font-size: 1.2rem;">0</b>
+          <!-- Card 1: Total Users -->
+          <div class="rf-stat-card">
+            <div class="rf-stat-icon-circle rf-icon-blue">👥</div>
+            <div class="rf-stat-content">
+              <span class="rf-stat-label">USUARIOS TOTALES</span>
+              <span class="rf-stat-number" id="dashTotalUsers">24</span>
+              <span class="rf-stat-subtext" style="color: #38bdf8;">+3 esta semana</span>
             </div>
           </div>
 
-          <!-- Plan Básico -->
-          <div class="glass-panel" style="border: 2px solid var(--primary); box-shadow: 0 0 35px var(--primary-glow); padding: 2rem; position: relative;">
-            <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">⭐</div>
-            <h4 style="font-size: 1.5rem; color: var(--primary); font-weight: 900;">BÁSICO</h4>
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.3rem;">Módulos esenciales de puntería y visuales para juego seguro.</p>
-            
-            <ul style="list-style: none; margin: 1.5rem 0; display: flex; flex-direction: column; gap: 0.6rem; font-size: 0.9rem; color: var(--text-main);">
-              <li>✔ <b>Aimbot Suavizado Legítimo (Bezier Smoothing)</b></li>
-              <li>✔ <b>ESP Box 2D & Líneas de Jugadores</b></li>
-              <li>✔ <b>Ignorar Compañeros & Filtro de Bots</b></li>
-              <li>✖ <span style="color: var(--text-dim);">Sin FakeLag ni Exploits de Velocidad</span></li>
-              <li>✖ <span style="color: var(--text-dim);">Sin Silent Aim Rage</span></li>
-            </ul>
-            <div style="padding-top: 1rem; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
-              <span style="color: var(--text-muted); font-size: 0.85rem;">Usuarios Activos:</span>
-              <b id="subBasicCount" style="color: var(--primary); font-size: 1.2rem;">0</b>
+          <!-- Card 2: Supreme Users -->
+          <div class="rf-stat-card">
+            <div class="rf-stat-icon-circle rf-icon-purple">👑</div>
+            <div class="rf-stat-content">
+              <span class="rf-stat-label">USUARIOS SUPREME</span>
+              <span class="rf-stat-number" id="dashSupremeUsers" style="color: #c084fc;">16</span>
+              <span class="rf-stat-subtext" id="dashSupremePct">66.7% del total</span>
             </div>
           </div>
 
+          <!-- Card 3: Basic Users -->
+          <div class="rf-stat-card">
+            <div class="rf-stat-icon-circle rf-icon-gold">⭐</div>
+            <div class="rf-stat-content">
+              <span class="rf-stat-label">USUARIOS BÁSICO</span>
+              <span class="rf-stat-number" id="dashBasicUsers" style="color: #fbbf24;">8</span>
+              <span class="rf-stat-subtext" id="dashBasicPct">33.3% del total</span>
+            </div>
+          </div>
+
+          <!-- Card 4: Live Connected -->
+          <div class="rf-stat-card">
+            <div class="rf-stat-icon-circle rf-icon-green">👥</div>
+            <div class="rf-stat-content">
+              <span class="rf-stat-label">CONECTADOS EN VIVO</span>
+              <span class="rf-stat-number" id="dashLiveUsers" style="color: #34d399;">8</span>
+              <span class="rf-stat-subtext">En este momento</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Middle Grid: Recent Activity & Active Users Chart -->
+        <div class="rf-middle-grid">
+
+          <!-- Left Box: Actividad Reciente -->
+          <div class="rf-box">
+            <div class="rf-box-header">
+              <span class="rf-box-title">ACTIVIDAD RECIENTE</span>
+            </div>
+
+            <div class="rf-activity-list" id="activityListContainer">
+              <div class="rf-activity-item">
+                <div class="rf-act-left">
+                  <div class="rf-act-icon rf-icon-green">A</div>
+                  <span class="rf-act-text"><b>tester_supreme_1</b> inició sesión</span>
+                </div>
+                <span class="rf-act-time">Hace 2 min</span>
+              </div>
+
+              <div class="rf-activity-item">
+                <div class="rf-act-left">
+                  <div class="rf-act-icon rf-icon-purple">A</div>
+                  <span class="rf-act-text"><b>usuario_12</b> renovó su acceso (Supreme 30 días)</span>
+                </div>
+                <span class="rf-act-time">Hace 15 min</span>
+              </div>
+
+              <div class="rf-activity-item">
+                <div class="rf-act-left">
+                  <div class="rf-act-icon rf-icon-gold">★</div>
+                  <span class="rf-act-text">HWID actualizado para <b>usuario_07</b></span>
+                </div>
+                <span class="rf-act-time">Hace 1 hora</span>
+              </div>
+
+              <div class="rf-activity-item">
+                <div class="rf-act-left">
+                  <div class="rf-act-icon rf-icon-green">A</div>
+                  <span class="rf-act-text">Nuevo usuario creado: <b>player_king</b></span>
+                </div>
+                <span class="rf-act-time">Hace 2 horas</span>
+              </div>
+
+              <div class="rf-activity-item">
+                <div class="rf-act-left">
+                  <div class="rf-act-icon rf-icon-purple">👑</div>
+                  <span class="rf-act-text"><b>usuario_15</b> cambió de plan a Supreme</span>
+                </div>
+                <span class="rf-act-time">Hace 3 horas</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Box: Usuarios Activos (7 Días) SVG Chart -->
+          <div class="rf-box">
+            <div class="rf-box-header">
+              <span class="rf-box-title">USUARIOS ACTIVOS (7 DÍAS)</span>
+              <select style="background: #111622; border: 1px solid rgba(255,255,255,0.08); color: #cbd5e1; border-radius: 6px; font-size: 0.72rem; padding: 2px 8px;">
+                <option>7 Días</option>
+                <option>30 Días</option>
+              </select>
+            </div>
+
+            <!-- Glowing Wave SVG Chart Replica -->
+            <div class="rf-chart-container">
+              <svg viewBox="0 0 450 160" style="width: 100%; height: 100%; overflow: visible;">
+                <defs>
+                  <linearGradient id="chartGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.35"/>
+                    <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0.0"/>
+                  </linearGradient>
+                </defs>
+
+                <!-- Grid lines -->
+                <line x1="30" y1="20" x2="430" y2="20" stroke="rgba(255,255,255,0.04)" stroke-dasharray="3,3"/>
+                <line x1="30" y1="55" x2="430" y2="55" stroke="rgba(255,255,255,0.04)" stroke-dasharray="3,3"/>
+                <line x1="30" y1="90" x2="430" y2="90" stroke="rgba(255,255,255,0.04)" stroke-dasharray="3,3"/>
+                <line x1="30" y1="125" x2="430" y2="125" stroke="rgba(255,255,255,0.04)"/>
+
+                <!-- Y Axis Labels -->
+                <text x="10" y="24" fill="#64748b" font-size="10">40</text>
+                <text x="10" y="59" fill="#64748b" font-size="10">30</text>
+                <text x="10" y="94" fill="#64748b" font-size="10">20</text>
+                <text x="10" y="129" fill="#64748b" font-size="10">10</text>
+                <text x="18" y="145" fill="#64748b" font-size="10">0</text>
+
+                <!-- Area Fill -->
+                <path d="M 45 75 Q 105 45, 165 78 T 285 45 T 345 75 T 415 65 L 415 130 L 45 130 Z" fill="url(#chartGrad)"/>
+
+                <!-- Wave Line -->
+                <path d="M 45 75 Q 105 45, 165 78 T 285 45 T 345 75 T 415 65" fill="none" stroke="#a855f7" stroke-width="2.5"/>
+
+                <!-- Points with tooltips -->
+                <circle cx="45" cy="75" r="4" fill="#a855f7" stroke="#fff" stroke-width="1.5"/>
+                <circle cx="105" cy="60" r="4" fill="#a855f7" stroke="#fff" stroke-width="1.5"/>
+                <circle cx="165" cy="78" r="4" fill="#a855f7" stroke="#fff" stroke-width="1.5"/>
+                <circle cx="225" cy="65" r="4" fill="#a855f7" stroke="#fff" stroke-width="1.5"/>
+                
+                <!-- Active Tooltip Point (27 May) -->
+                <line x1="285" y1="45" x2="285" y2="130" stroke="rgba(255,255,255,0.2)" stroke-dasharray="2,2"/>
+                <circle cx="285" cy="45" r="5" fill="#a855f7" stroke="#fff" stroke-width="2"/>
+                <rect x="270" y="20" width="30" height="18" rx="4" fill="#1e293b" stroke="#7c3aed" stroke-width="1"/>
+                <text x="274" y="32" fill="#fff" font-size="8" font-weight="bold">27 May</text>
+
+                <circle cx="345" cy="75" r="4" fill="#a855f7" stroke="#fff" stroke-width="1.5"/>
+                <circle cx="415" cy="65" r="4" fill="#a855f7" stroke="#fff" stroke-width="1.5"/>
+
+                <!-- X Axis Labels -->
+                <text x="35" y="148" fill="#64748b" font-size="9">21 May</text>
+                <text x="95" y="148" fill="#64748b" font-size="9">22 May</text>
+                <text x="155" y="148" fill="#64748b" font-size="9">23 May</text>
+                <text x="215" y="148" fill="#64748b" font-size="9">24 May</text>
+                <text x="275" y="148" fill="#64748b" font-size="9">25 May</text>
+                <text x="335" y="148" fill="#64748b" font-size="9">26 May</text>
+                <text x="395" y="148" fill="#64748b" font-size="9">27 May</text>
+              </svg>
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+      <!-- ======================================================== -->
+      <!-- TAB 2: USUARIOS (EXACT BOTTOM IMAGE REPLICA)             -->
+      <!-- ======================================================== -->
+      <section id="tab-tab_users" class="tab-pane" style="display: none;">
+        
+        <!-- Header with Title & Action Buttons -->
+        <div class="rf-users-header">
+          <div>
+            <h2 style="font-size: 1.4rem; font-weight: 800; color: #fff; margin-bottom: 0.2rem;">Usuarios</h2>
+            <p style="font-size: 0.78rem; color: #64748b; margin: 0;">Gestiona todos los usuarios registrados en el sistema.</p>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <button onclick="openCreateUserModal()" class="rf-btn-purple-primary">
+              <span>+</span> Crear Usuario
+            </button>
+            <button onclick="loadAuthData()" class="rf-top-btn">
+              <span>🔄</span> Refrescar
+            </button>
+          </div>
+        </div>
+
+        <!-- Search Box & Filter Chips Exact Replica -->
+        <div class="rf-filter-bar">
+          <input type="text" id="searchUserInput" oninput="filterUsersTable()" placeholder="🔍 Buscar usuario, HWID..." class="rf-search-box">
+
+          <div class="rf-chip-group">
+            <button class="rf-chip active" onclick="filterUserTier('ALL')" id="filterTierAll">Todos</button>
+            <button class="rf-chip" onclick="filterUserTier('Supreme')" id="filterTierSupreme">Supreme</button>
+            <button class="rf-chip" onclick="filterUserTier('Basico')" id="filterTierBasic">Básico</button>
+            <button class="rf-chip" onclick="filterUserTier('Gratis')" id="filterTierGratis">Gratis</button>
+          </div>
+        </div>
+
+        <!-- Exact Data Table Box -->
+        <div class="rf-table-box">
+          <table class="rf-table">
+            <thead>
+              <tr>
+                <th>USUARIO</th>
+                <th>PLAN</th>
+                <th>SUSCRIPCIÓN</th>
+                <th>HWID</th>
+                <th>ESTADO</th>
+                <th style="text-align: right;">ACCIONES</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody">
+              <tr><td colspan="6" style="text-align: center; color: #64748b; padding: 1.5rem;">Cargando usuarios...</td></tr>
+            </tbody>
+          </table>
+
+          <!-- Pagination Bar Exact Replica -->
+          <div class="rf-pagination-bar">
+            <span id="usersPaginationText">Mostrando 1 a 5 de 24 usuarios</span>
+            <div class="rf-pag-group" id="usersPaginationButtons">
+              <button class="rf-pag-btn">&lt;</button>
+              <button class="rf-pag-btn active">1</button>
+              <button class="rf-pag-btn">2</button>
+              <button class="rf-pag-btn">3</button>
+              <span style="color: #64748b; padding: 0 2px;">...</span>
+              <button class="rf-pag-btn">5</button>
+              <button class="rf-pag-btn">&gt;</button>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ======================================================== -->
+      <!-- TAB 3: GENERAR LICENCIA (KEYS)                           -->
+      <!-- ======================================================== -->
+      <section id="tab-tab_keys" class="tab-pane" style="display: none;">
+        <div class="rf-users-header">
+          <div>
+            <h2 style="font-size: 1.4rem; font-weight: 800; color: #fff; margin-bottom: 0.2rem;">Licencias (Keys)</h2>
+            <p style="font-size: 0.78rem; color: #64748b; margin: 0;">Generación y control de claves de acceso VIP.</p>
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <button onclick="openGenerateAuthKeysModal()" class="rf-btn-purple-primary" style="background: linear-gradient(135deg, #0284c7, #06b6d4);">
+              <span>+</span> Generar Licencias
+            </button>
+            <button onclick="loadAuthData()" class="rf-top-btn">
+              <span>🔄</span> Refrescar
+            </button>
+          </div>
+        </div>
+
+        <div class="rf-filter-bar">
+          <input type="text" id="searchAuthKeyInput" oninput="filterAuthKeysTable()" placeholder="🔍 Buscar clave o etiqueta..." class="rf-search-box">
+        </div>
+
+        <div class="rf-table-box">
+          <table class="rf-table">
+            <thead>
+              <tr>
+                <th>CLAVE DE ACCESO</th>
+                <th>PLAN</th>
+                <th>ETIQUETA</th>
+                <th>TIEMPO RESTANTE</th>
+                <th>HWID</th>
+                <th>ESTADO</th>
+                <th style="text-align: right;">ACCIONES</th>
+              </tr>
+            </thead>
+            <tbody id="authKeysTableBody">
+              <tr><td colspan="7" style="text-align: center; color: #64748b; padding: 1.5rem;">Cargando licencias...</td></tr>
+            </tbody>
+          </table>
         </div>
       </section>
 
       <!-- ======================================================== -->
-      <!-- TAB 4: MODO PANEL GRATIS (FREE ACCESS ALL PCS)           -->
+      <!-- TAB 4: SUSCRIPCIONES                                     -->
       <!-- ======================================================== -->
-      <section id="tab-tab_freemode" class="tab-pane">
-        <div class="section-title">
-          <div>
-            <h3 style="font-size: 1.35rem; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
-              <span>🔓</span> Modo Panel Gratis (Acceso Universal Para Todas las PCs)
-            </h3>
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem;">
-              Activa el modo gratuito para que cualquier persona en cualquier PC pueda abrir e inyectar el panel con un usuario universal o con 1 solo clic.
-            </p>
+      <section id="tab-tab_subscriptions" class="tab-pane" style="display: none;">
+        <h2 style="font-size: 1.4rem; font-weight: 800; color: #fff; margin-bottom: 1rem;">Planes y Suscripciones</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="rf-box" style="border-color: rgba(124, 58, 237, 0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <h3 style="color: #c084fc; font-size: 1.1rem; font-weight: 800;">👑 SUPREME VIP</h3>
+              <span class="badge-rf-supreme">TIER MÁXIMO</span>
+            </div>
+            <p style="font-size: 0.78rem; color: #94a3b8; margin-bottom: 1rem;">Acceso ilimitado a todos los módulos Rage, ESP, Silent Aim y Bypass.</p>
+            <div style="font-size: 0.85rem; color: #fff; font-weight: 700;">Usuarios Registrados: <span id="subCountSupreme" style="color: #c084fc;">0</span></div>
+          </div>
+
+          <div class="rf-box" style="border-color: rgba(245, 158, 11, 0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <h3 style="color: #fbbf24; font-size: 1.1rem; font-weight: 800;">⭐ BÁSICO</h3>
+              <span class="badge-rf-basic">TIER ESENCIAL</span>
+            </div>
+            <p style="font-size: 0.78rem; color: #94a3b8; margin-bottom: 1rem;">Aimbot Suavizado Bezier, Snaplines y ESP Box 2D seguro.</p>
+            <div style="font-size: 0.85rem; color: #fff; font-weight: 700;">Usuarios Registrados: <span id="subCountBasic" style="color: #fbbf24;">0</span></div>
           </div>
         </div>
+      </section>
 
-        <div class="glass-panel" style="padding: 2.5rem; margin-top: 1.5rem; max-width: 800px;">
-          
-          <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 2rem; border-bottom: 1px solid var(--border-color);">
-            <div>
-              <h4 id="freeModeStatusTitle" style="font-size: 1.25rem; color: var(--text-main); font-weight: 800;">
-                🔓 Modo Panel Gratuito (Global Free Access)
-              </h4>
-              <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 0.35rem; line-height: 1.5;">
-                Cuando esté activado, el panel en las PCs de los usuarios se abrirá automáticamente sin rechazar por HWID ni pedir compras.
-              </p>
-            </div>
-            <label class="switch" style="transform: scale(1.2);">
+      <!-- ======================================================== -->
+      <!-- TAB 5: MODO PANEL GRATIS                                 -->
+      <!-- ======================================================== -->
+      <section id="tab-tab_freemode" class="tab-pane" style="display: none;">
+        <div class="rf-box" style="max-width: 550px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+            <h3 style="color: #fff; font-size: 1.1rem; font-weight: 800;">🔓 Modo Panel Gratis Global</h3>
+            <label class="switch">
               <input type="checkbox" id="freeModeMasterToggle" onchange="toggleFreeModeConfig()">
               <span class="slider"></span>
             </label>
           </div>
-
-          <div style="margin-top: 2rem;">
-            <label style="display: block; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem;">Nivel de Suscripción Entregado a los Usuarios Gratuitos:</label>
-            <select id="freeModeTierSelect" class="form-control" style="max-width: 400px; font-weight: 700;" onchange="saveFreeModeSettings()">
-              <option value="Supreme">👑 SUPREME VIP (Permitir Todas las Funciones Gratis)</option>
-              <option value="Basico" selected>⭐ BÁSICO (Solo Funciones Básicas)</option>
+          <p style="font-size: 0.78rem; color: #94a3b8; margin-bottom: 1rem;">Permite inyectar el panel sin clave ni verificación de HWID para eventos promocionales.</p>
+          <div style="margin-top: 0.5rem;">
+            <span style="font-size: 0.72rem; color: #64748b; font-weight: 700; text-transform: uppercase;">Nivel otorgado en Modo Gratis:</span>
+            <select id="freeModeTierSelect" class="ka-select" style="margin-top: 0.25rem;" onchange="saveFreeModeSettings()">
+              <option value="Supreme">👑 SUPREME VIP (Todas las funciones)</option>
+              <option value="Basico" selected>⭐ BÁSICO (Funciones esenciales)</option>
             </select>
           </div>
-
-          <div style="margin-top: 1.75rem; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.5rem;">
-            <h5 style="color: var(--primary); font-size: 1rem; margin-bottom: 0.75rem;">🔑 Credenciales Universales Públicas (Opcional)</h5>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">
-              Puedes compartir este usuario y contraseña con tu comunidad para que todos entren con la misma cuenta:
-            </p>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-              <div>
-                <label style="font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase;">Usuario Universal:</label>
-                <input type="text" id="freeUniversalUserInput" class="form-control" value="FREE" style="font-family: var(--font-mono); font-weight: 700; margin-top: 0.3rem;">
-              </div>
-              <div>
-                <label style="font-size: 0.8rem; color: var(--text-dim); text-transform: uppercase;">Contraseña Universal:</label>
-                <input type="text" id="freeUniversalPassInput" class="form-control" value="FREE" style="font-family: var(--font-mono); font-weight: 700; margin-top: 0.3rem;">
-              </div>
-            </div>
-            <button onclick="saveFreeModeSettings()" class="btn-submit" style="margin-top: 1.25rem; max-width: 250px;">Guardar Cuenta Universal</button>
-          </div>
-
         </div>
       </section>
 
       <!-- ======================================================== -->
-      <!-- TAB 5: MENSAJES EN TIEMPO REAL AL PANEL                  -->
+      <!-- TAB 6: MENSAJES (BROADCAST)                              -->
       <!-- ======================================================== -->
-      <section id="tab-tab_broadcast" class="tab-pane">
-        <div class="section-title">
-          <div>
-            <h3 style="font-size: 1.35rem; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
-              <span>📢</span> Transmitir Mensajes y Alertas en Vivo al Panel
-            </h3>
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem;">
-              Envía avisos de mantenimiento, bienvenidas o promociones. Aparecerán de inmediato en el panel de todos los usuarios conectados.
-            </p>
-          </div>
-        </div>
-
-        <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 1.5rem; margin-top: 1.5rem;">
-          
-          <!-- Form -->
-          <div class="glass-panel" style="padding: 2rem;">
-            <form onsubmit="submitAuthBroadcast(event)">
-              <div class="form-group">
-                <label>Tipo de Mensaje:</label>
-                <select id="broadcastTypeSelect" class="form-control">
-                  <option value="notice" selected>📢 Aviso General / Noticia</option>
-                  <option value="maintenance">⚠️ Mantenimiento o Actualización</option>
-                  <option value="supreme">👑 Promoción Supreme VIP</option>
-                  <option value="free">🔓 Evento Panel Gratis</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Título del Mensaje:</label>
-                <input type="text" id="broadcastTitleInput" class="form-control" placeholder="Ej: BIENVENIDOS A RAFAPANEL 2026" value="AVISO VIP" required>
-              </div>
-              <div class="form-group">
-                <label>Contenido del Mensaje para el Panel:</label>
-                <textarea id="broadcastMsgInput" class="form-control" rows="4" placeholder="Escribe el mensaje aquí..." required>Servidor 100% activo. Sincronización en la nube disponible.</textarea>
-              </div>
-              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem;">
-                <input type="checkbox" id="broadcastActiveToggle" checked style="width: 16px; height: 16px; accent-color: var(--primary);">
-                <label for="broadcastActiveToggle" style="font-size: 0.85rem; color: var(--text-main); margin: 0; cursor: pointer;">
-                  Mostrar alerta activa en todos los paneles conectados
-                </label>
-              </div>
-              <button type="submit" class="btn-submit" style="background: linear-gradient(135deg, #a855f7, #00e5ff);">
-                📢 Transmitir en Tiempo Real ➔
-              </button>
-            </form>
-          </div>
-
-          <!-- Live Preview -->
-          <div class="glass-panel" style="padding: 2rem; border-color: rgba(168, 85, 247, 0.4);">
-            <h4 style="color: #a855f7; font-size: 1.1rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-              <span>👁️</span> Previsualización del Panel In-Game
-            </h4>
-            <div id="previewAlertBox" style="background: rgba(168, 85, 247, 0.15); border: 1px solid #a855f7; border-radius: var(--radius-sm); padding: 1.25rem; box-shadow: 0 0 20px rgba(168, 85, 247, 0.2);">
-              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem;">
-                <span id="previewAlertIcon">📢</span>
-                <b id="previewAlertTitle" style="color: #a855f7; font-size: 1rem;">AVISO VIP</b>
-              </div>
-              <p id="previewAlertBody" style="color: #e2e8f0; font-size: 0.9rem; line-height: 1.5;">
-                Servidor 100% activo. Sincronización en la nube disponible.
-              </p>
-              <div style="margin-top: 0.75rem; font-size: 0.75rem; color: var(--text-dim);">
-                ● Transmitido en vivo a todos los clientes (24/7)
-              </div>
+      <section id="tab-tab_broadcast" class="tab-pane" style="display: none;">
+        <div class="rf-box" style="max-width: 600px;">
+          <h3 style="color: #fff; font-size: 1.1rem; font-weight: 800; margin-bottom: 0.75rem;">💬 Transmisión de Avisos al Panel</h3>
+          <form onsubmit="submitAuthBroadcast(event)">
+            <div class="ka-input-wrap">
+              <label class="ka-input-label">Título del Mensaje</label>
+              <input type="text" id="broadcastTitleInput" class="ka-input" value="AVISO VIP" required>
             </div>
-          </div>
-
+            <div class="ka-input-wrap">
+              <label class="ka-input-label">Contenido del Aviso</label>
+              <textarea id="broadcastMsgInput" class="ka-input" style="height: 70px; padding: 8px 12px;" required>Servidores 100% activos y sincronizados.</textarea>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.4rem; margin-bottom: 1rem;">
+              <input type="checkbox" id="broadcastActiveToggle" checked style="accent-color: #7c3aed;">
+              <label for="broadcastActiveToggle" style="font-size: 0.76rem; color: #94a3b8;">Mostrar alerta activa en todos los paneles</label>
+            </div>
+            <button type="submit" class="rf-btn-purple-primary" style="width: 100%; justify-content: center; height: 38px;">
+              Transmitir Aviso ➔
+            </button>
+          </form>
         </div>
       </section>
 
       <!-- ======================================================== -->
-      <!-- TAB 6: TELEMETRÍA Y CONEXIONES EN VIVO                   -->
+      <!-- TAB 7: TELEMETRÍA DE CLIENTES                            -->
       <!-- ======================================================== -->
-      <section id="tab-tab_telemetry" class="tab-pane">
-        <div class="workspace-top-bar">
+      <section id="tab-tab_telemetry" class="tab-pane" style="display: none;">
+        <div class="rf-users-header">
           <div>
-            <h3 style="font-size: 1.35rem; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
-              <span>⚡</span> Telemetría de Clientes & HWID Sessions
-            </h3>
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem;">
-              Monitorea en vivo qué usuarios o HWIDs están conectados e inyectando en este momento.
-            </p>
-          </div>
-          <div class="live-sync-indicator">
-            <span class="live-dot-pulse"></span> Auto-Sync Activo (2.5s)
+            <h2 style="font-size: 1.4rem; font-weight: 800; color: #fff; margin-bottom: 0.2rem;">Telemetría de Clientes</h2>
+            <p style="font-size: 0.78rem; color: #64748b; margin: 0;">Sesiones activas conectadas en tiempo real.</p>
           </div>
         </div>
 
-        <div class="glass-panel" style="margin-top: 1.5rem;">
-          <div style="overflow-x: auto;">
-            <table class="dll-table">
-              <thead>
-                <tr>
-                  <th>Usuario / HWID</th>
-                  <th>Suscripción</th>
-                  <th>Emulador / App</th>
-                  <th>Dirección IP</th>
-                  <th>Último Pulso</th>
-                  <th>Estado</th>
-                </tr>
-              </thead>
-              <tbody id="authLiveSessionsTable">
-                <tr><td colspan="6" style="text-align: center; color: var(--text-dim); padding: 2rem;">Esperando conexiones de clientes...</td></tr>
-              </tbody>
-            </table>
+        <div class="rf-table-box">
+          <table class="rf-table">
+            <thead>
+              <tr>
+                <th>USUARIO / HWID</th>
+                <th>PLAN</th>
+                <th>EMULADOR / PC</th>
+                <th>IP</th>
+                <th>ÚLTIMO PULSO</th>
+                <th>ESTADO</th>
+              </tr>
+            </thead>
+            <tbody id="authLiveSessionsTable">
+              <tr><td colspan="6" style="text-align: center; color: #64748b; padding: 1.5rem;">Esperando conexiones...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ======================================================== -->
+      <!-- TAB 8: SELLERS (REVENDEDORES - OWNER ONLY)               -->
+      <!-- ======================================================== -->
+      <section id="tab-tab_sellers" class="tab-pane" style="display: none;">
+        <div class="rf-users-header">
+          <div>
+            <h2 style="font-size: 1.4rem; font-weight: 800; color: #fff; margin-bottom: 0.2rem;">Revendedores (Sellers)</h2>
+            <p style="font-size: 0.78rem; color: #64748b; margin: 0;">Crea cuentas de revendedor para que solo puedan crear usuarios y keys.</p>
+          </div>
+          <button onclick="openCreateSellerModal()" class="rf-btn-purple-primary">
+            <span>+</span> Crear Revendedor
+          </button>
+        </div>
+
+        <div class="rf-table-box">
+          <table class="rf-table">
+            <thead>
+              <tr>
+                <th>USUARIO REVENDEDOR</th>
+                <th>CONTRASEÑA</th>
+                <th>ETIQUETA</th>
+                <th>FECHA DE CREACIÓN</th>
+                <th>ESTADO</th>
+                <th style="text-align: right;">ACCIONES</th>
+              </tr>
+            </thead>
+            <tbody id="sellersTableBody">
+              <tr><td colspan="6" style="text-align: center; color: #64748b; padding: 1.5rem;">No hay revendedores registrados.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ======================================================== -->
+      <!-- TAB 9: BACKUP & CLOUD SYNC                               -->
+      <!-- ======================================================== -->
+      <section id="tab-tab_backup" class="tab-pane" style="display: none;">
+        <h2 style="font-size: 1.4rem; font-weight: 800; color: #fff; margin-bottom: 1rem;">Backup & Cloud Sync (Persistencia)</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="rf-box">
+            <h3 style="color: #38bdf8; font-size: 1.05rem; font-weight: 800; margin-bottom: 0.5rem;">💾 Descargar Copia de Seguridad</h3>
+            <p style="font-size: 0.78rem; color: #94a3b8; margin-bottom: 1rem;">Exporta todas las licencias, usuarios y revendedores en un archivo JSON en tu PC.</p>
+            <button onclick="exportDatabaseBackup()" class="rf-btn-purple-primary" style="width: 100%; justify-content: center;">
+              ⬇️ Exportar Base de Datos (.json)
+            </button>
+          </div>
+
+          <div class="rf-box">
+            <h3 style="color: #c084fc; font-size: 1.05rem; font-weight: 800; margin-bottom: 0.5rem;">🔄 Restaurar Copia de Seguridad</h3>
+            <p style="font-size: 0.78rem; color: #94a3b8; margin-bottom: 1rem;">Sube un archivo JSON de respaldo para restaurar todo al instante.</p>
+            <input type="file" id="backupFileInput" accept=".json" style="display: none;" onchange="handleImportBackupFile(event)">
+            <button onclick="document.getElementById('backupFileInput').click()" class="rf-top-btn" style="width: 100%; justify-content: center; height: 38px;">
+              ⬆️ Subir Archivo JSON
+            </button>
           </div>
         </div>
       </section>
@@ -545,8 +602,138 @@
     </main>
   </div>
 
+  <!-- Popover Actions Dropdown Menu -->
+  <div id="rowActionMenu" class="rf-dropdown-menu">
+    <button class="rf-dropdown-item" id="menuBtnPlan">💎 Cambiar Plan</button>
+    <button class="rf-dropdown-item" id="menuBtnHwid">🔄 Resetear HWID</button>
+    <button class="rf-dropdown-item" id="menuBtnRenew" style="color: #34d399;">⏰ Renovar +30D</button>
+    <button class="rf-dropdown-item" id="menuBtnDelete" style="color: #f87171;">🗑 Eliminar</button>
+  </div>
+
+  <!-- Modal: Crear Usuario -->
+  <div id="createUserModal" class="modal-overlay">
+    <div class="ka-login-card" style="max-width: 420px; text-align: left;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+        <h3 style="color: #fff; font-size: 1.1rem; font-weight: 800;">👤 Crear Nuevo Usuario</h3>
+        <button onclick="closeCreateUserModal()" style="background: none; border: none; color: #64748b; font-size: 1.3rem; cursor: pointer;">&times;</button>
+      </div>
+      <form onsubmit="submitCreateUser(event)">
+        <div class="ka-input-wrap">
+          <label class="ka-input-label">Usuario</label>
+          <input type="text" id="newUsernameInput" class="ka-input" placeholder="player_king" required>
+        </div>
+        <div class="ka-input-wrap">
+          <label class="ka-input-label">Contraseña</label>
+          <input type="text" id="newUserPasswordInput" class="ka-input" placeholder="clave123" required>
+        </div>
+        <div class="ka-input-wrap">
+          <label class="ka-input-label">Nivel de Plan</label>
+          <select id="newUserSubscriptionSelect" class="ka-select">
+            <option value="Supreme" selected>👑 Supreme</option>
+            <option value="Basico">⭐ Básico</option>
+          </select>
+        </div>
+        <div class="ka-input-wrap">
+          <label class="ka-input-label">Duración</label>
+          <select id="newUserDurationSelect" class="ka-select" onchange="toggleUserCustomDays(this.value)">
+            <option value="1d">1 Día</option>
+            <option value="7d">7 Días</option>
+            <option value="30d" selected>30 Días</option>
+            <option value="lifetime">Permanente</option>
+            <option value="custom">Personalizado...</option>
+          </select>
+        </div>
+        <div class="ka-input-wrap" id="userCustomDaysGroup" style="display: none;">
+          <label class="ka-input-label">Cantidad de Días</label>
+          <input type="number" id="userCustomDays" class="ka-input" value="15" min="1" max="365">
+        </div>
+        <div class="ka-input-wrap">
+          <label class="ka-input-label">Etiqueta / Nota</label>
+          <input type="text" id="newUserLabelInput" class="ka-input" placeholder="Cliente VIP">
+        </div>
+        <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+          <button type="button" onclick="closeCreateUserModal()" class="rf-top-btn" style="flex: 1; justify-content: center; height: 38px;">Cancelar</button>
+          <button type="submit" class="rf-btn-purple-primary" style="flex: 2; justify-content: center; height: 38px;">Crear Usuario ➔</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Generar Licencias -->
+  <div id="generateAuthKeysModal" class="modal-overlay">
+    <div class="ka-login-card" style="max-width: 420px; text-align: left;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+        <h3 style="color: #38bdf8; font-size: 1.1rem; font-weight: 800;">🗝️ Generar Licencias</h3>
+        <button onclick="closeGenerateAuthKeysModal()" style="background: none; border: none; color: #64748b; font-size: 1.3rem; cursor: pointer;">&times;</button>
+      </div>
+      <form onsubmit="submitGenerateAuthKeys(event)">
+        <div class="ka-input-wrap">
+          <label class="ka-input-label">Nivel de Plan</label>
+          <select id="keyAuthSubSelect" class="ka-select">
+            <option value="Supreme" selected>👑 Supreme</option>
+            <option value="Basico">⭐ Básico</option>
+          </select>
+        </div>
+        <div class="ka-input-wrap">
+          <label class="ka-input-label">Duración</label>
+          <select id="keyAuthDurSelect" class="ka-select" onchange="toggleKeyAuthCustomDays(this.value)">
+            <option value="1d">1 Día</option>
+            <option value="7d">7 Días</option>
+            <option value="30d" selected>30 Días</option>
+            <option value="lifetime">Permanente</option>
+            <option value="custom">Personalizado...</option>
+          </select>
+        </div>
+        <div class="ka-input-wrap" id="keyAuthCustomDaysGroup" style="display: none;">
+          <label class="ka-input-label">Cantidad de Días</label>
+          <input type="number" id="keyAuthCustomDays" class="ka-input" value="15" min="1" max="365">
+        </div>
+        <div class="ka-input-wrap">
+          <label class="ka-input-label">Cantidad a Generar</label>
+          <input type="number" id="keyAuthCountInput" class="ka-input" value="1" min="1" max="50">
+        </div>
+        <div class="ka-input-wrap">
+          <label class="ka-input-label">Etiqueta / Lote</label>
+          <input type="text" id="keyAuthLabelInput" class="ka-input" value="Licencia VIP">
+        </div>
+        <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+          <button type="button" onclick="closeGenerateAuthKeysModal()" class="rf-top-btn" style="flex: 1; justify-content: center; height: 38px;">Cancelar</button>
+          <button type="submit" class="rf-btn-purple-primary" style="flex: 2; justify-content: center; height: 38px; background: linear-gradient(135deg, #0284c7, #06b6d4);">Generar Claves ➔</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Crear Seller -->
+  <div id="createSellerModal" class="modal-overlay">
+    <div class="ka-login-card" style="max-width: 420px; text-align: left;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+        <h3 style="color: #c084fc; font-size: 1.1rem; font-weight: 800;">💼 Crear Revendedor</h3>
+        <button onclick="closeCreateSellerModal()" style="background: none; border: none; color: #64748b; font-size: 1.3rem; cursor: pointer;">&times;</button>
+      </div>
+      <form onsubmit="submitCreateSeller(event)">
+        <div class="ka-input-wrap">
+          <label class="ka-input-label">Usuario Revendedor</label>
+          <input type="text" id="sellerUsernameInput" class="ka-input" placeholder="seller_01" required>
+        </div>
+        <div class="ka-input-wrap">
+          <label class="ka-input-label">Contraseña</label>
+          <input type="text" id="sellerPasswordInput" class="ka-input" placeholder="clave123" required>
+        </div>
+        <div class="ka-input-wrap">
+          <label class="ka-input-label">Etiqueta / Nombre</label>
+          <input type="text" id="sellerLabelInput" class="ka-input" value="Revendedor Oficial">
+        </div>
+        <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+          <button type="button" onclick="closeCreateSellerModal()" class="rf-top-btn" style="flex: 1; justify-content: center; height: 38px;">Cancelar</button>
+          <button type="submit" class="rf-btn-purple-primary" style="flex: 2; justify-content: center; height: 38px;">Crear Revendedor ➔</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Toast Notification -->
-  <div id="authToast" class="toast">
+  <div id="authToast" class="toast" style="padding: 0.6rem 1rem; font-size: 0.8rem;">
     <span id="authToastIcon">✔</span>
     <span id="authToastMsg">Operación completada</span>
   </div>
